@@ -1,0 +1,4 @@
+interface:
+  display_name: "模型适配与验证"
+  short_description: "规范模型环境配置、GPU 适配、精度性能验证及问题证据与成果交接"
+  default_prompt: "使用 $model-adaptation，按照当前项目规范完成模型适配任务，记录验证证据、结论与下一步。"
