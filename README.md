@@ -1,4 +1,4 @@
-# 模型适配与验证 · model-adaptation
+# 模型适配与验证 · model-adaptation-skill
 
 面向模型环境配置、GPU 与厂商框架适配、推理验证、数值对齐、性能测量和适配问题排查的中文 Agent Skill。
 
@@ -21,7 +21,7 @@
 
 ```text
 使用 $skill-installer，从这个 GitHub 目录安装 model-adaptation：
-https://github.com/rayson1iu/model-adaptation/tree/main/skills/model-adaptation
+https://github.com/rayson1iu/model-adaptation-skill/tree/main/skills/model-adaptation
 ```
 
 安装后在下一轮对话中调用；若未出现，重新启动 Codex。
@@ -40,7 +40,7 @@ https://github.com/rayson1iu/model-adaptation/tree/main/skills/model-adaptation
   fi
   download_dir="$(mktemp -d)"
   trap 'rm -rf "$download_dir"' EXIT
-  git clone --depth 1 https://github.com/rayson1iu/model-adaptation.git "$download_dir/repository"
+  git clone --depth 1 https://github.com/rayson1iu/model-adaptation-skill.git "$download_dir/repository"
   mkdir -p "$HOME/.agents/skills"
   cp -R "$download_dir/repository/skills/model-adaptation" "$skill_dir"
   echo "已安装：$skill_dir"
