@@ -2,7 +2,7 @@
 
 面向模型环境配置、GPU 与厂商框架适配、推理验证、数值对齐、性能测量和适配问题排查的中文 Agent Skill。
 
-将适配过程整理为可复现的操作、真实证据和有边界的结论，支持新增模型、已有适配修复和历史报告复核。
+将适配过程整理为可复现的操作、真实证据和有边界的结论，支持通过 `level=P0|P1|P2` 指定适配深度，也支持新增模型、已有适配修复和历史报告复核。
 
 ## 能做什么
 
@@ -53,6 +53,45 @@ https://github.com/rayson1iu/model-adaptation-skill/tree/main/skills/model-adapt
 
 ## 使用
 
+### 通过 level 指定适配深度
+
+| 参数 | 工作范围 |
+| --- | --- |
+| `level=P0` | 训练 + 推理 + 精度对齐 + 端到端性能剖析 |
+| `level=P1` | 推理跑通 + 与参考 GPU 精度对齐，视情况微调 |
+| `level=P2` | 调研收录，仅输出技术报告，不执行模型实验 |
+
+直接在 Codex 的请求中填写参数与任务信息，例如：
+
+```text
+$model-adaptation level=P1
+模型：OpenVLA-OFT
+工作区：/workspace/openvla
+目标平台：待适配 GPU
+参考 GPU：项目指定的基线 GPU
+```
+
+```text
+$model-adaptation level=P0
+模型：目标模型
+训练方案、数据、精度门槛和端到端测量范围：按当前项目验收规范执行
+```
+
+```text
+$model-adaptation level=P2
+模型：待调研模型
+目标平台：待评估 GPU
+仅输出技术报告，给出收录建议、适配风险及升级到 P1/P0 的前置条件。
+```
+
+`level` 是本 skill 解释的输入约定，不是终端命令或 Codex 原生 CLI 参数。也可写“级别：P1”，小写 `p1` 按 P1 处理。不支持的值或互相冲突的级别会在执行受影响的工作前要求澄清。
+
+P0 按约定训练方案执行，单步训练不代表训练验收完成。P1 根据证据与条件决定是否需要微调，不用微调掩盖精度对齐失败。P2 不安装依赖、下载权重或运行模型，仅交付注明来源和证据缺口的技术报告。详见 [分级执行与交付](skills/model-adaptation/references/levels.md)。
+
+未指定 `level` 时继续按自然语言限定范围，不默认执行 P0。缺少必需条件或阶段失败时如实标记未完成，不自动降级或宣称完成；用户明确裁剪必需阶段时按裁剪范围执行，并在报告中说明。
+
+### 自然语言指定范围
+
 安装后，在 Codex 中明确调用：
 
 ```text
@@ -82,6 +121,7 @@ skills/model-adaptation/
 ├── agents/openai.yaml            Codex 界面元数据
 ├── references/
 │   ├── environment.md            环境、目录与跨平台对照
+│   ├── levels.md                 P0/P1/P2 分级执行与交付
 │   ├── validation.md             数值、性能及按需训练验证
 │   └── issues-and-handoff.md     问题记录与成果交接
 └── assets/
