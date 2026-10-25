@@ -88,7 +88,7 @@ $model-adaptation level=P2
 
 `level` 是本 skill 解释的输入约定，不是终端命令或 Codex 原生 CLI 参数。也可写“级别：P1”，小写 `p1` 按 P1 处理。不支持的值或互相冲突的级别会在执行受影响的工作前要求澄清。
 
-希望工作过程中查看网页进展时，在请求中加 `dashboard=on` 或写“开启本地看板”。Agent 会逐项更新本机只读页面，展开每个阶段的工作项、流程状态和验收判定；有实测结果时显示附来源的指标和图表，Markdown ISSUE 与报告可在页面内阅读，PDF 提供打开或下载入口。页面自动刷新；看板没有显示 Agent 内部思考或自动探测真实进程的能力。详见[本地工作看板](skills/model-adaptation/references/dashboard.md)。
+希望工作过程中查看网页进展时，在请求中加 `dashboard=on` 或写“开启本地看板”。一个 workshop 内可同时登记多个模型及多次运行，在页面顶部选择要查看的模型与运行；详细阶段、指标、ISSUE 和报告只显示所选运行。Agent 会逐项更新本机只读页面，展开每个阶段的工作项、流程状态和验收判定；有实测结果时显示附来源的指标和图表，Markdown ISSUE 与报告可在页面内阅读，PDF 提供打开或下载入口。页面自动刷新；看板没有显示 Agent 内部思考或自动探测真实进程的能力。详见[本地工作看板](skills/model-adaptation/references/dashboard.md)。
 
 有条件时一并提供目标 GPU、参考 GPU 或已有基线、权重与真实输入、验收门槛及产物位置；P0 的长时训练还应说明已有训练方案、完成条件和资源额度。Skill 会先读取项目已有资料，不要求重复填写；[开工前的最小依据](skills/model-adaptation/references/levels.md#开工前的最小依据)说明缺项时可以先推进哪些工作。
 
