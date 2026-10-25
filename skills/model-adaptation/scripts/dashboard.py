@@ -3,13 +3,14 @@
 
 import argparse
 from datetime import datetime
+import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import math
 import os
 from pathlib import Path
 import tempfile
-from urllib.parse import quote, unquote, urlsplit
+from urllib.parse import parse_qs, quote, unquote, urlsplit
 
 
 STAGES = {
@@ -359,9 +360,11 @@ def command_measurements(args):
     save_state(path, state)
 
 
-def public_state(state):
+def public_state(state, model_key):
     root = Path(state["workspace_root"]).resolve()
     result = {key: value for key, value in state.items() if key != "workspace_root"}
+    result["model_key"] = model_key
+    query = f"?model={model_key}"
     for kind, plural in (("issue", "issues"), ("report", "reports")):
         result[plural] = []
         for entry in state[plural]:
@@ -369,7 +372,7 @@ def public_state(state):
             try:
                 target = (root / entry["path"]).resolve()
                 if target.is_relative_to(root) and target.is_file():
-                    item["url"] = f"/artifact/{kind}/{quote(entry['id'], safe='')}"
+                    item["url"] = f"/artifact/{kind}/{quote(entry['id'], safe='')}{query}"
             except (KeyError, OSError):
                 pass
             result[plural].append(item)
@@ -379,7 +382,7 @@ def public_state(state):
             result[plural] = []
             for entry in measurements[plural]:
                 item = dict(entry)
-                item["source_url"] = f"/evidence/{kind}/{quote(entry['id'], safe='')}"
+                item["source_url"] = f"/evidence/{kind}/{quote(entry['id'], safe='')}{query}"
                 result[plural].append(item)
     except (OSError, ValueError, json.JSONDecodeError) as error:
         result["metrics"] = []
@@ -388,9 +391,64 @@ def public_state(state):
     return result
 
 
+def model_summary(state, key):
+    stages = state.get("stages", [])
+    required = [stage for stage in stages if stage.get("required")]
+    if any(stage.get("process") == "blocked" for stage in stages):
+        status = "blocked"
+    elif any(stage.get("process") == "running" for stage in stages):
+        status = "running"
+    elif required and all(stage.get("process") == "done" for stage in required):
+        status = "done"
+    else:
+        status = "pending"
+    current = next((stage.get("label", "") for stage in stages if stage.get("process") in ("running", "blocked")), "")
+    return {"key": key, "model": state["model"], "level": state["level"],
+            "run_id": state["run_id"], "updated_at": state["updated_at"],
+            "status": status, "current_stage": current}
+
+
 def command_serve(args):
-    state_path = Path(args.state).expanduser().resolve()
-    load_state(state_path)
+    state_path = Path(args.state).expanduser().resolve() if args.state else None
+    workshop = Path(args.workspace).expanduser().resolve() if args.workspace else None
+    if state_path:
+        load_state(state_path)
+    elif not workshop.is_dir():
+        raise ValueError(f"Workshop does not exist: {workshop}")
+
+    def available_states():
+        if state_path:
+            paths = [state_path]
+            boundary = state_path.parent
+        else:
+            paths = []
+            boundary = workshop
+            ignored = {".git", ".venv", "venv", "node_modules", "__pycache__", ".cache"}
+            for folder, dirs, files in os.walk(workshop, followlinks=False):
+                dirs[:] = [name for name in dirs if name not in ignored and not (Path(folder) / name).is_symlink()]
+                if "dashboard.json" in files:
+                    paths.append(Path(folder) / "dashboard.json")
+        found = {}
+        for path in paths:
+            try:
+                resolved = path.resolve()
+                if not resolved.is_relative_to(boundary) or path.is_symlink():
+                    continue
+                state = load_state(resolved)
+                root = Path(state["workspace_root"]).resolve()
+                if workshop and (not root.is_relative_to(workshop) or not resolved.is_relative_to(root)):
+                    continue
+                if not all(isinstance(state.get(name), str) for name in ("model", "level", "run_id", "updated_at")):
+                    continue
+                key = hashlib.sha256(str(resolved.relative_to(boundary)).encode("utf-8")).hexdigest()[:16]
+                found[key] = state
+            except (OSError, ValueError, KeyError, json.JSONDecodeError):
+                continue
+        return found
+
+    def summaries(found):
+        return sorted((model_summary(state, key) for key, state in found.items()),
+                      key=lambda item: item["updated_at"], reverse=True)
 
     class Handler(BaseHTTPRequestHandler):
         def send_bytes(self, body, content_type, status=200, artifact=False):
@@ -405,17 +463,27 @@ def command_serve(args):
             self.wfile.write(body)
 
         def do_GET(self):
-            route = urlsplit(self.path).path
+            parsed = urlsplit(self.path)
+            route = parsed.path
             if route in ("/", "/index.html"):
                 self.send_bytes(TEMPLATE.read_bytes(), "text/html; charset=utf-8")
                 return
-            try:
-                state = load_state(state_path)
-            except (OSError, ValueError, json.JSONDecodeError):
-                self.send_bytes(b"State unavailable", "text/plain; charset=utf-8", 503)
+            found = available_states()
+            if route == "/api/models":
+                body = json.dumps({"models": summaries(found)}, ensure_ascii=False).encode("utf-8")
+                self.send_bytes(body, "application/json; charset=utf-8")
                 return
+            requested = parse_qs(parsed.query).get("model", [None])[0]
+            if requested and requested not in found:
+                self.send_bytes(b"Model not found", "text/plain; charset=utf-8", 404)
+                return
+            key = requested or (summaries(found)[0]["key"] if found else None)
+            if key is None:
+                self.send_bytes(b"No dashboard states found", "text/plain; charset=utf-8", 404)
+                return
+            state = found[key]
             if route == "/api/state":
-                body = json.dumps(public_state(state), ensure_ascii=False).encode("utf-8")
+                body = json.dumps(public_state(state, key), ensure_ascii=False).encode("utf-8")
                 self.send_bytes(body, "application/json; charset=utf-8")
                 return
             parts = route.split("/")
@@ -513,8 +581,10 @@ def make_parser():
             entry.add_argument("--kind", choices=("run", "research", "other"), required=True)
         entry.set_defaults(func=lambda args, selected=kind: command_artifact(args, selected))
 
-    serve = sub.add_parser("serve", help="Serve the read-only dashboard on loopback")
-    serve.add_argument("--state", required=True)
+    serve = sub.add_parser("serve", help="Serve one run or discover all runs in a workshop")
+    source = serve.add_mutually_exclusive_group(required=True)
+    source.add_argument("--state", help="Single-run dashboard state")
+    source.add_argument("--workspace", help="Workshop root containing dashboard.json files")
     serve.add_argument("--port", type=int, default=8765)
     serve.set_defaults(func=command_serve)
     return parser
