@@ -13,7 +13,7 @@
 
 这是指导 AI 助手执行工作的文档型 skill，安装本 skill 无需额外 Python 包。运行实际模型时，仍需按目标项目准备硬件、框架、权重、数据及访问权限。
 
-报告面向需要理解结果和作出决定的人：先写结论与关键指标，必要时用真实数据绘制误差、训练或性能图表；详细命令、环境和原始日志放在附录或证据链接中。失败和关键限制仍需如实说明，避免在正文反复堆砌一般性免责声明。见[运行报告模板](skills/model-adaptation/assets/run-report.md)与[分级交付要求](skills/model-adaptation/references/levels.md)。
+报告面向需要理解结果和作出决定的人：先写结论与关键指标，必要时用真实数据绘制误差、训练或性能图表；详细命令、环境和原始日志放在附录或证据链接中。失败和关键限制仍需如实说明，避免在正文反复堆砌一般性免责声明。P0/P1 使用[运行报告模板](skills/model-adaptation/assets/run-report.md)，P2 使用[技术调研报告模板](skills/model-adaptation/assets/research-report.md)；[报告示例](skills/model-adaptation/references/report-examples.md)展示建议收录、暂缓收录和 P1 未通过的写法。
 
 ## 安装
 
@@ -88,6 +88,10 @@ $model-adaptation level=P2
 
 `level` 是本 skill 解释的输入约定，不是终端命令或 Codex 原生 CLI 参数。也可写“级别：P1”，小写 `p1` 按 P1 处理。不支持的值或互相冲突的级别会在执行受影响的工作前要求澄清。
 
+希望工作过程中查看网页进展时，在请求中加 `dashboard=on` 或写“开启本地看板”。Agent 会逐项更新本机只读页面，展开每个阶段的工作项、流程状态和验收判定；有实测结果时显示附来源的指标和图表，Markdown ISSUE 与报告可在页面内阅读，PDF 提供打开或下载入口。页面自动刷新；看板没有显示 Agent 内部思考或自动探测真实进程的能力。详见[本地工作看板](skills/model-adaptation/references/dashboard.md)。
+
+有条件时一并提供目标 GPU、参考 GPU 或已有基线、权重与真实输入、验收门槛及产物位置；P0 的长时训练还应说明已有训练方案、完成条件和资源额度。Skill 会先读取项目已有资料，不要求重复填写；[开工前的最小依据](skills/model-adaptation/references/levels.md#开工前的最小依据)说明缺项时可以先推进哪些工作。
+
 P0 按约定训练方案执行，单步训练不代表训练验收完成。P1 根据证据与条件决定是否需要微调，不用微调掩盖精度对齐失败。P2 不安装依赖、下载权重或运行模型，仅交付注明来源和证据缺口的技术报告。详见 [分级执行与交付](skills/model-adaptation/references/levels.md)。
 
 未指定 `level` 时继续按自然语言限定范围，不默认执行 P0。缺少必需条件或阶段失败时如实标记未完成，不自动降级或宣称完成；用户明确裁剪必需阶段时按裁剪范围执行，并在报告中说明。
@@ -125,10 +129,15 @@ skills/model-adaptation/
 │   ├── environment.md            环境、目录与跨平台对照
 │   ├── levels.md                 P0/P1/P2 分级执行与交付
 │   ├── validation.md             数值、性能及按需训练验证
-│   └── issues-and-handoff.md     问题记录与成果交接
+│   ├── issues-and-handoff.md     问题记录与成果交接
+│   ├── report-examples.md        虚构示例，展示报告结论写法
+│   └── dashboard.md              可选本地工作看板
+├── scripts/dashboard.py          看板状态与本机只读服务
 └── assets/
     ├── experiment-profile.md     实验配置模板
     ├── run-report.md             运行报告模板
+    ├── research-report.md        P2 技术调研报告模板
+    ├── dashboard.html            看板页面
     ├── issue.md                  问题记录模板
     └── work-log.md               工作日志模板
 ```
