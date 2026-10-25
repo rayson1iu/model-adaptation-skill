@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>模型适配 · 工作看板</title>
+  <style>
+    :root { color-scheme: light; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: #f4f6f9; color: #182536; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    a { color: #1458a5; text-underline-offset: 3px; }
+    a:hover { color: #0b3e78; }
+    .wrap { max-width: 1140px; margin: auto; padding: 34px 28px 60px; }
+    .eyebrow { margin: 0 0 9px; color: #4b667f; font-size: 12px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(28px, 4vw, 42px); letter-spacing: -.03em; }
+    h2 { margin: 0 0 18px; font-size: 20px; letter-spacing: -.01em; }
+    p { line-height: 1.62; }
+    .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 22px; margin-bottom: 24px; }
+    .sub { margin: 9px 0 0; color: #61748b; font-size: 14px; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 10px; background: #eaf0f7; color: #34516c; font-size: 12px; font-weight: 700; white-space: nowrap; }
+    .pill.running, .pill.in_progress { background: #dbeafe; color: #174b9a; }
+    .pill.done, .pill.pass, .pill.resolved, .pill.final { background: #ddf4e6; color: #17633d; }
+    .pill.fail, .pill.open { background: #ffe4e2; color: #a32923; }
+    .pill.blocked { background: #fff0d3; color: #865700; }
+    .pill.diagnostic { background: #e8ecf8; color: #485b8a; }
+    .pill.not_applicable, .pill.skipped { background: #e8e9ed; color: #5d6570; }
+    .hero { display: grid; grid-template-columns: 1.7fr 1fr; gap: 20px; margin-bottom: 20px; }
+    .panel { background: #fff; border: 1px solid #e1e7ef; border-radius: 18px; box-shadow: 0 8px 30px rgba(25,45,73,.04); padding: 24px; }
+    .hero-main { background: linear-gradient(125deg, #102b4e 0%, #1c4a71 100%); color: white; border: 0; }
+    .hero-main .eyebrow { color: #b4d6ef; }
+    .hero-main h2 { margin: 0 0 10px; font-size: 24px; }
+    .hero-main p { margin: 0; color: #e1edf8; }
+    .next { border-top: 1px solid rgba(255,255,255,.2); margin-top: 21px; padding-top: 16px; }
+    .next strong { display: block; font-size: 12px; letter-spacing: .08em; color: #b4d6ef; margin-bottom: 5px; }
+    .progress-number { font-size: 34px; font-weight: 760; line-height: 1.05; margin: 7px 0; }
+    .muted { color: #65778c; font-size: 13px; }
+    .segments { display: flex; gap: 5px; margin: 22px 0 12px; }
+    .segment { height: 9px; flex: 1; min-width: 12px; border-radius: 99px; background: #e5eaf0; }
+    .segment.done { background: #2a9d6c; }
+    .segment.running { background: #4e8bd6; }
+    .segment.blocked { background: #e7a22e; }
+    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 28px; }
+    .metric { padding: 18px 20px; }
+    .metric b { display: block; font-size: 29px; line-height: 1.1; margin: 4px 0; }
+    .metric span { color: #63768b; font-size: 13px; }
+    .measurements { margin-bottom: 28px; }
+    .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .measure-card { padding: 20px; }
+    .measure-card .label { display: block; color: #50677e; font-size: 13px; margin-bottom: 8px; }
+    .measure-card .value { display: block; font-size: 27px; font-weight: 760; line-height: 1.15; }
+    .measure-card .value small { font-size: 14px; font-weight: 600; margin-left: 3px; }
+    .measure-card .detail { margin-top: 10px; color: #61758b; font-size: 12px; line-height: 1.5; }
+    .measure-card .foot { margin-top: 14px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 14px; }
+    .chart-card h3 { font-size: 16px; margin: 0 0 14px; }
+    .chart-card svg { display: block; width: 100%; height: auto; background: #fbfcfe; border: 1px solid #edf1f5; border-radius: 8px; }
+    .chart-card p { color: #5d7187; font-size: 12px; margin: 10px 0 0; }
+    .chart-card .source { margin-top: 10px; font-size: 12px; }
+    .measure-error { padding: 13px 16px; border-radius: 10px; background: #fff0d3; color: #805800; font-size: 13px; }
+    .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 15px; }
+    .section-head h2 { margin: 0; }
+    .section-head small { color: #718199; }
+    .stages { display: grid; gap: 10px; margin-bottom: 28px; }
+    .stage { padding: 20px 24px; }
+    .stage-head { display: grid; grid-template-columns: 33px 1fr auto; align-items: start; gap: 14px; }
+    .stage .index { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px; background: #edf3f9; color: #3a607f; font-weight: 700; }
+    .stage h3 { margin: 1px 0 5px; font-size: 16px; }
+    .stage p { margin: 0; color: #5d7187; font-size: 13px; }
+    .stage .tags { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 5px; }
+    .work-items { margin: 17px 0 0 47px; border-top: 1px solid #e9edf2; }
+    .work-item { display: grid; grid-template-columns: 13px minmax(0,1fr) auto; gap: 11px; align-items: start; padding: 12px 0; border-bottom: 1px solid #f0f2f5; }
+    .work-item:last-child { border-bottom: 0; padding-bottom: 0; }
+    .work-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 6px; background: #c4ceda; }
+    .work-dot.running { background: #4e8bd6; box-shadow: 0 0 0 4px #e8f1fd; }
+    .work-dot.done { background: #2a9d6c; }
+    .work-dot.blocked { background: #e7a22e; }
+    .work-dot.skipped { background: #8793a0; }
+    .work-name { display: block; font-size: 14px; font-weight: 650; line-height: 1.45; }
+    .work-note { display: block; margin-top: 3px; color: #697d91; font-size: 12px; line-height: 1.5; }
+    .item-summary { margin-top: 5px; color: #698097; font-size: 12px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .item { padding: 15px 0; border-top: 1px solid #edf0f4; }
+    .item:first-child { border-top: 0; padding-top: 0; }
+    .item:last-child { padding-bottom: 0; }
+    .item-title { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+    .item-title a, .item-title strong { font-weight: 700; overflow-wrap: anywhere; }
+    .doc-button { appearance: none; border: 0; padding: 0; color: #1458a5; background: none; font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; text-align: left; overflow-wrap: anywhere; }
+    .doc-button:hover { color: #0b3e78; }
+    .item small { display: block; margin-top: 6px; color: #6b7d90; overflow-wrap: anywhere; }
+    dialog { width: min(920px, calc(100vw - 28px)); max-height: min(92vh, 1100px); padding: 0; border: 1px solid #d9e2ed; border-radius: 16px; box-shadow: 0 24px 80px rgba(9,27,50,.26); }
+    dialog::backdrop { background: rgba(13,29,47,.5); }
+    .doc-head { position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; background: white; padding: 18px 22px; border-bottom: 1px solid #e6ebf1; z-index: 1; }
+    .doc-head h2 { margin: 0; font-size: 18px; }
+    .doc-head button { border: 1px solid #d9e2eb; border-radius: 8px; background: #f7f9fb; padding: 7px 11px; cursor: pointer; }
+    .doc-body { padding: 24px; overflow-wrap: anywhere; line-height: 1.7; }
+    .doc-body h1 { font-size: 28px; margin: 0 0 18px; }
+    .doc-body h2 { margin: 28px 0 12px; font-size: 21px; }
+    .doc-body h3 { margin: 22px 0 10px; font-size: 17px; }
+    .doc-body p, .doc-body ul, .doc-body ol { margin: 10px 0; }
+    .doc-body blockquote { margin: 14px 0; padding: 8px 14px; border-left: 3px solid #6b99c9; background: #f4f8fc; color: #4b637c; }
+    .doc-body pre { overflow: auto; padding: 14px; border-radius: 8px; background: #142b42; color: #eef5fa; }
+    .doc-body code { padding: 2px 4px; border-radius: 4px; background: #eef2f6; }
+    .doc-body pre code { padding: 0; background: transparent; }
+    .doc-body table { border-collapse: collapse; width: 100%; min-width: 460px; }
+    .doc-body th, .doc-body td { padding: 9px 11px; border: 1px solid #dce4ec; text-align: left; vertical-align: top; }
+    .doc-body th { background: #f3f6fa; }
+    .doc-body .table-wrap { overflow-x: auto; margin: 16px 0; }
+    .doc-image { display: block; margin: 16px 0; }
+    .doc-image img { max-width: 100%; height: auto; border: 1px solid #e0e6ed; border-radius: 8px; }
+    .doc-image small { display: block; color: #63788d; margin-top: 4px; }
+    .pdf-notice { padding: 16px 18px; background: #f3f7fb; border-radius: 9px; color: #4d647b; }
+    .empty { color: #7a8797; font-size: 14px; }
+    .footer { margin-top: 24px; color: #748499; font-size: 12px; }
+    #error { display: none; margin-bottom: 16px; padding: 12px 15px; border-radius: 9px; background: #fff0d3; color: #724e00; }
+    @media (max-width: 760px) { .wrap { padding: 24px 16px 42px; } .top { display: block; } .top > .pill { margin-top: 14px; } .hero, .grid { grid-template-columns: 1fr; } .metrics { grid-template-columns: repeat(3, 1fr); gap: 7px; } .metric { padding: 15px 12px; } .metric b { font-size: 23px; } .stage { padding: 18px; } .stage-head { grid-template-columns: 30px 1fr; } .stage .tags { grid-column: 2; justify-content: flex-start; } .work-items { margin-left: 0; } .work-item { grid-template-columns: 13px minmax(0,1fr); } .work-item .pill { grid-column: 2; justify-self: start; } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div id="error" role="alert"></div>
+    <header class="top">
+      <div><p class="eyebrow">Model adaptation · Live work board</p><h1 id="title">正在读取看板…</h1><p class="sub" id="subtitle"></p></div>
+      <span class="pill" id="freshness">等待状态</span>
+    </header>
+    <div class="hero">
+      <section class="panel hero-main"><p class="eyebrow">当前结论</p><h2 id="summary">—</h2><div class="next"><strong>下一步</strong><p id="next-action">—</p></div></section>
+      <section class="panel"><p class="eyebrow">必需阶段进展</p><div class="progress-number" id="progress">—</div><div class="muted" id="current-stage">—</div><div class="item-summary" id="item-progress">—</div><div class="segments" id="segments" aria-label="阶段进度"></div><div class="muted" id="updated">—</div></section>
+    </div>
+    <div class="metrics" aria-label="产物统计"><div class="panel metric"><b id="issue-count">0</b><span>ISSUE</span></div><div class="panel metric"><b id="report-count">0</b><span>报告</span></div><div class="panel metric"><b id="open-count">0</b><span>待处理 ISSUE</span></div></div>
+    <section class="measurements" id="measurements-section" hidden><div class="section-head"><h2>模型实测数据</h2><small>仅显示已登记且有来源的测量</small></div><div id="measurement-error"></div><div class="metric-grid" id="metric-grid"></div><div class="chart-grid" id="chart-grid"></div></section>
+    <section><div class="section-head"><h2>工作阶段</h2><small>流程状态与验收判定分别显示</small></div><div class="stages" id="stages"></div></section>
+    <div class="grid"><section class="panel"><div class="section-head"><h2>ISSUE</h2><small>产生后即可查看</small></div><div id="issues"></div></section><section class="panel"><div class="section-head"><h2>报告</h2><small>草稿与最终版</small></div><div id="reports"></div></section></div>
+    <p class="footer">本页仅在本机提供，只显示已经写入看板状态的事实；后台每 5 秒读取一次，不代表 Agent 内部推理的实时进度。</p>
+  </main>
+  <dialog id="doc-dialog" aria-labelledby="doc-title"><div class="doc-head"><h2 id="doc-title">文档</h2><button type="button" id="doc-close">关闭</button></div><div class="doc-body" id="doc-body">正在读取…</div></dialog>
+  <script>
+    const $ = id => document.getElementById(id);
+    const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+    const processName = {pending:"待开始",running:"进行中",done:"已结束",blocked:"被阻塞"};
+    const itemName = {pending:"待开始",running:"进行中",done:"已完成",blocked:"被阻塞",skipped:"不适用"};
+    const acceptanceName = {not_evaluated:"未判定",pass:"通过",fail:"失败",blocked:"被阻塞",not_applicable:"不适用"};
+    const issueName = {open:"待处理",in_progress:"处理中",resolved:"已解决",blocked:"被阻塞"};
+    const reportName = {draft:"草稿",final:"最终版"};
+    const safeClass = value => /^[a-z_]+$/.test(value || "") ? value : "pending";
+    const pill = (label, kind) => `<span class="pill ${safeClass(kind)}">${esc(label)}</span>`;
+    const docButton = (item, kind) => item.url && item.url.startsWith("/artifact/")
+      ? `<button type="button" class="doc-button" data-doc-kind="${kind}" data-doc-id="${esc(item.id)}">${esc(item.title)}</button>`
+      : `<strong>${esc(item.title)}</strong>`;
+    const number = value => value !== 0 && Math.abs(value) < .0001
+      ? Number(value).toExponential(3)
+      : new Intl.NumberFormat("zh-CN", {maximumFractionDigits: 6}).format(value);
+    let latestState = null;
+
+    function chartSvg(chart) {
+      const points = (chart.points || []).filter(p => Number.isFinite(p.value));
+      if (!points.length) return "";
+      const width = 620, height = 235, left = 54, right = 20, top = 20, bottom = 48;
+      const plotWidth = width - left - right, plotHeight = height - top - bottom;
+      const values = points.map(p => p.value);
+      if (Number.isFinite(chart.threshold)) values.push(chart.threshold);
+      let min = chart.type === "bar" ? Math.min(0, ...values) : Math.min(...values);
+      let max = chart.type === "bar" ? Math.max(0, ...values) : Math.max(...values);
+      if (max === min) { max += 1; min -= 1; }
+      const padding = (max - min) * .07; max += padding; min -= padding;
+      const y = value => top + (max - value) / (max - min) * plotHeight;
+      const grid = [0, .25, .5, .75, 1].map(fraction => {
+        const yy = top + fraction * plotHeight;
+        const value = max - fraction * (max - min);
+        return `<line x1="${left}" y1="${yy}" x2="${width-right}" y2="${yy}" stroke="#e8edf3"/><text x="${left-8}" y="${yy+4}" text-anchor="end" fill="#667b8f" font-size="10">${esc(number(value))}</text>`;
+      }).join("");
+      const step = plotWidth / Math.max(points.length, 1);
+      const body = chart.type === "bar"
+        ? points.map((point, index) => {
+            const barWidth = Math.max(2, Math.min(step * .68, 60));
+            const x = left + index * step + (step - barWidth) / 2;
+            const yZero = y(0), yy = y(point.value);
+            return `<rect x="${x}" y="${Math.min(yZero,yy)}" width="${barWidth}" height="${Math.max(1,Math.abs(yZero-yy))}" rx="3" fill="#3477b9"><title>${esc(point.label)}：${esc(number(point.value))} ${esc(chart.unit)}</title></rect>`;
+          }).join("")
+        : `<polyline points="${points.map((point,index) => `${left + (points.length === 1 ? plotWidth/2 : index * plotWidth/(points.length-1))},${y(point.value)}`).join(" ")}" fill="none" stroke="#3477b9" stroke-width="2.5" stroke-linejoin="round"/>`;
+      const marks = points.length <= 7 ? points.map((point,index) => index) : [0, Math.floor((points.length-1)/2), points.length-1];
+      const labels = [...new Set(marks)].map(index => {
+        const x = chart.type === "bar" ? left + (index + .5) * step : left + (points.length === 1 ? plotWidth/2 : index * plotWidth/(points.length-1));
+        const label = String(points[index].label).slice(0, 18);
+        return `<text x="${x}" y="${height-18}" text-anchor="middle" fill="#667b8f" font-size="10">${esc(label)}</text>`;
+      }).join("");
+      const threshold = Number.isFinite(chart.threshold) ? `<line x1="${left}" y1="${y(chart.threshold)}" x2="${width-right}" y2="${y(chart.threshold)}" stroke="#cb6e35" stroke-width="1.5" stroke-dasharray="6 4"/><text x="${width-right-2}" y="${y(chart.threshold)-5}" text-anchor="end" fill="#a7552a" font-size="10">${esc(chart.threshold_label || "门槛")} ${esc(number(chart.threshold))}</text>` : "";
+      return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(chart.title)}；单位 ${esc(chart.unit)}"><text x="${left}" y="13" fill="#667b8f" font-size="10">${esc(chart.unit)}</text>${grid}${body}${threshold}${labels}</svg>`;
+    }
+
+    function renderMeasurements(state) {
+      const metrics = state.metrics || [], charts = state.charts || [];
+      $("measurements-section").hidden = !metrics.length && !charts.length && !state.measurement_error;
+      $("measurement-error").innerHTML = state.measurement_error ? `<p class="measure-error">测量数据暂不可用：${esc(state.measurement_error)}</p>` : "";
+      $("metric-grid").innerHTML = metrics.map(metric => {
+        const status = metric.status || "diagnostic";
+        const statusText = {pass:"通过",fail:"未达门槛",diagnostic:"诊断数据"}[status] || status;
+        const details = [metric.context, metric.reference && `参考：${metric.reference}`, metric.threshold && `门槛：${metric.threshold}`].filter(Boolean).map(esc).join(" · ");
+        const source = metric.source_url?.startsWith("/evidence/") ? `<a href="${esc(metric.source_url)}" target="_blank" rel="noopener">查看数据</a>` : "";
+        return `<article class="panel measure-card"><span class="label">${esc(metric.label)}</span><span class="value">${esc(number(metric.value))}<small>${esc(metric.unit)}</small></span><div class="detail">${details}</div><div class="foot">${pill(statusText,status)}${source}</div></article>`;
+      }).join("");
+      $("chart-grid").innerHTML = charts.map(chart => `<article class="panel chart-card"><h3>${esc(chart.title)}</h3>${chartSvg(chart)}${chart.caption ? `<p>${esc(chart.caption)}</p>` : ""}${chart.source_url?.startsWith("/evidence/") ? `<div class="source"><a href="${esc(chart.source_url)}" target="_blank" rel="noopener">查看图表数据</a></div>` : ""}</article>`).join("");
+    }
+
+    function linkedUrl(kind, id, raw, route) {
+      const value = raw.trim().split(/[?#]/)[0];
+      if (!value || value.startsWith("/") || /^[a-z][a-z0-9+.-]*:/i.test(value) || value.includes("\\")) return null;
+      return `/${route}/${kind}/${encodeURIComponent(id)}/${encodeURIComponent(value)}`;
+    }
+
+    function inlineMarkdown(text, kind, id) {
+      const token = /!\[([^\]]*)\]\(([^)]+)\)|\[([^\]]+)\]\(([^)]+)\)|`([^`]+)`|\*\*([^*]+)\*\*/g;
+      let result = "", last = 0, match;
+      while ((match = token.exec(text))) {
+        result += esc(text.slice(last, match.index));
+        if (match[1] !== undefined) {
+          const url = linkedUrl(kind, id, match[2], "attachment");
+          result += url ? `<span class="doc-image"><img loading="lazy" src="${esc(url)}" alt="${esc(match[1])}"><small>${esc(match[1])}</small></span>` : esc(match[0]);
+        } else if (match[3] !== undefined) {
+          const raw = match[4].trim();
+          const url = /^https?:\/\//i.test(raw) ? raw : linkedUrl(kind, id, raw, "resource");
+          result += url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(match[3])}</a>` : esc(match[3]);
+        } else if (match[5] !== undefined) {
+          result += `<code>${esc(match[5])}</code>`;
+        } else {
+          result += `<strong>${esc(match[6])}</strong>`;
+        }
+        last = token.lastIndex;
+      }
+      return result + esc(text.slice(last));
+    }
+
+    function renderMarkdown(markdown, kind, id) {
+      const lines = markdown.replace(/\r\n?/g, "\n").split("\n");
+      const output = [];
+      let index = 0;
+      const cells = line => line.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map(cell => cell.trim());
+      while (index < lines.length) {
+        const line = lines[index];
+        if (!line.trim()) { index++; continue; }
+        if (/^```/.test(line)) {
+          const code = []; index++;
+          while (index < lines.length && !/^```/.test(lines[index])) code.push(lines[index++]);
+          if (index < lines.length) index++;
+          output.push(`<pre><code>${esc(code.join("\n"))}</code></pre>`); continue;
+        }
+        const heading = line.match(/^(#{1,6})\s+(.+)$/);
+        if (heading) { const level = Math.min(heading[1].length, 4); output.push(`<h${level}>${inlineMarkdown(heading[2],kind,id)}</h${level}>`); index++; continue; }
+        if (/^\|/.test(line) && index + 1 < lines.length && /^\|?[\s:|-]+\|?$/.test(lines[index+1]) && lines[index+1].includes("-")) {
+          const headers = cells(line); index += 2; const rows = [];
+          while (index < lines.length && /^\|/.test(lines[index])) rows.push(cells(lines[index++]));
+          output.push(`<div class="table-wrap"><table><thead><tr>${headers.map(cell => `<th>${inlineMarkdown(cell,kind,id)}</th>`).join("")}</tr></thead><tbody>${rows.map(row => `<tr>${row.map(cell => `<td>${inlineMarkdown(cell,kind,id)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`); continue;
+        }
+        if (/^>\s?/.test(line)) { const block=[]; while (index < lines.length && /^>\s?/.test(lines[index])) block.push(lines[index++].replace(/^>\s?/,"")); output.push(`<blockquote>${inlineMarkdown(block.join(" "),kind,id)}</blockquote>`); continue; }
+        if (/^[-*]\s+/.test(line) || /^\d+\.\s+/.test(line)) {
+          const ordered = /^\d+\.\s+/.test(line), list=[];
+          const pattern = ordered ? /^\d+\.\s+/ : /^[-*]\s+/;
+          while (index < lines.length && pattern.test(lines[index])) list.push(lines[index++].replace(pattern,""));
+          const tag = ordered ? "ol" : "ul";
+          output.push(`<${tag}>${list.map(item => `<li>${inlineMarkdown(item,kind,id)}</li>`).join("")}</${tag}>`); continue;
+        }
+        const paragraph=[];
+        while (index < lines.length && lines[index].trim() && !/^(#{1,6}\s|```|>|[-*]\s|\d+\.\s|\|)/.test(lines[index])) paragraph.push(lines[index++]);
+        if (!paragraph.length) { output.push(`<p>${inlineMarkdown(lines[index++],kind,id)}</p>`); continue; }
+        output.push(`<p>${inlineMarkdown(paragraph.join(" "),kind,id)}</p>`);
+      }
+      return output.join("\n");
+    }
+
+    async function openDocument(kind, id) {
+      const collection = kind === "issue" ? latestState?.issues : latestState?.reports;
+      const item = collection?.find(entry => entry.id === id);
+      if (!item?.url?.startsWith("/artifact/")) return;
+      $("doc-title").textContent = item.title;
+      $("doc-body").textContent = "正在读取…";
+      $("doc-dialog").showModal();
+      if (item.path.toLowerCase().endsWith(".pdf")) {
+        $("doc-body").innerHTML = `<p class="pdf-notice">这是 PDF 文档。<a href="${esc(item.url)}" target="_blank" rel="noopener">在新标签打开或下载 PDF</a></p>`;
+        return;
+      }
+      try {
+        const response = await fetch(item.url, {cache:"no-store"});
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        $("doc-body").innerHTML = renderMarkdown(await response.text(),kind,id);
+      } catch (error) { $("doc-body").textContent = `无法读取文档：${error.message}`; }
+    }
+
+    document.addEventListener("click", event => {
+      const button = event.target.closest("[data-doc-kind]");
+      if (button) openDocument(button.dataset.docKind, button.dataset.docId);
+    });
+    $("doc-close").addEventListener("click", () => $("doc-dialog").close());
+    function render(state) {
+      latestState = state;
+      $("title").textContent = state.model + " · 适配看板";
+      $("subtitle").textContent = `级别 ${state.level} · ${state.run_id}`;
+      $("summary").textContent = state.summary || "尚无当前结论";
+      $("next-action").textContent = state.next_action || "尚未指定";
+      const stages = state.stages || [];
+      const required = stages.filter(stage => stage.required);
+      const done = required.filter(stage => stage.process === "done").length;
+      const current = stages.find(stage => stage.process === "running") || stages.find(stage => stage.process === "blocked") || stages.find(stage => stage.process === "pending");
+      const currentItem = current && ((current.items || []).find(item => item.status === "running") || (current.items || []).find(item => item.status === "blocked") || (current.items || []).find(item => item.status === "pending"));
+      const allItems = stages.flatMap(stage => stage.items || []);
+      const handledItems = allItems.filter(item => item.status === "done" || item.status === "skipped").length;
+      $("progress").textContent = `${done} / ${required.length}`;
+      $("current-stage").textContent = current ? `当前：${current.label}${currentItem ? " / " + currentItem.label : ""}` : "所有阶段已结束";
+      $("item-progress").textContent = allItems.length ? `工作项已处理 ${handledItems} / ${allItems.length}` : "等待添加工作项";
+      $("segments").innerHTML = required.map(stage => `<span class="segment ${safeClass(stage.process)}" title="${esc(stage.label + "：" + (processName[stage.process] || stage.process))}"></span>`).join("");
+      renderMeasurements(state);
+      $("stages").innerHTML = stages.map((stage, index) => {
+        const items = stage.items || [];
+        const handled = items.filter(item => item.status === "done" || item.status === "skipped").length;
+        const itemHtml = items.length ? items.map(item => `<div class="work-item"><span class="work-dot ${safeClass(item.status)}" aria-hidden="true"></span><div><span class="work-name">${esc(item.label)}</span>${item.note ? `<span class="work-note">${esc(item.note)}</span>` : ""}</div>${pill(itemName[item.status] || item.status,item.status)}</div>`).join("") : `<p class="empty">暂无逐项记录，可按项目流程添加。</p>`;
+        return `<article class="panel stage"><div class="stage-head"><div class="index">${index + 1}</div><div><h3>${esc(stage.label)}${stage.required ? "" : " <small class=\"muted\">按需</small>"}</h3><p>${esc(stage.note || "")}</p><div class="item-summary">已处理 ${handled} / ${items.length} 项</div></div><div class="tags">${pill(processName[stage.process] || stage.process, stage.process)}${pill(acceptanceName[stage.acceptance] || stage.acceptance, stage.acceptance)}</div></div><div class="work-items">${itemHtml}</div></article>`;
+      }).join("");
+      const issues = state.issues || [], reports = state.reports || [];
+      $("issue-count").textContent = issues.length;
+      $("report-count").textContent = reports.length;
+      $("open-count").textContent = issues.filter(item => item.status !== "resolved").length;
+      $("issues").innerHTML = issues.length ? issues.map(item => `<div class="item"><div class="item-title">${docButton(item,"issue")}${pill(issueName[item.status] || item.status,item.status)}</div><small>${esc(item.id)} · ${esc(item.path)}</small></div>`).join("") : `<p class="empty">暂无 ISSUE</p>`;
+      $("reports").innerHTML = reports.length ? reports.map(item => `<div class="item"><div class="item-title">${docButton(item,"report")}${pill(reportName[item.status] || item.status,item.status)}</div><small>${esc(item.kind)} · ${esc(item.path)}</small></div>`).join("") : `<p class="empty">暂无报告</p>`;
+      const updated = new Date(state.updated_at);
+      const old = stages.some(stage => stage.process === "running") && Date.now() - updated.getTime() > 10 * 60 * 1000;
+      $("freshness").textContent = old ? "状态可能已过期" : "自动刷新中";
+      $("freshness").className = "pill " + (old ? "blocked" : "done");
+      $("updated").textContent = `最近更新：${isNaN(updated.getTime()) ? state.updated_at : updated.toLocaleString("zh-CN")}`;
+    }
+    async function refresh() {
+      try {
+        const response = await fetch("/api/state", {cache:"no-store"});
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        render(await response.json());
+        $("error").style.display = "none";
+      } catch (error) {
+        $("error").textContent = `暂时无法读取看板状态：${error.message}`;
+        $("error").style.display = "block";
+        $("freshness").textContent = "连接中断";
+        $("freshness").className = "pill blocked";
+      }
+    }
+    refresh();
+    setInterval(refresh, 5000);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
+  </script>
+</body>
+</html>
