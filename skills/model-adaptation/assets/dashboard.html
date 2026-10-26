@@ -24,6 +24,31 @@
     .pill.blocked { background: #fff0d3; color: #865700; }
     .pill.diagnostic { background: #e8ecf8; color: #485b8a; }
     .pill.not_applicable, .pill.skipped { background: #e8e9ed; color: #5d6570; }
+    .switcher { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 20px; padding: 18px 20px; position: relative; z-index: 5; }
+    .picker-block { flex: 1; max-width: 620px; min-width: 0; }
+    .picker-label { margin: 0 0 9px; color: #526b83; font-size: 12px; font-weight: 750; letter-spacing: .04em; }
+    .model-picker { position: relative; }
+    .model-picker summary { display: flex; align-items: center; gap: 13px; min-height: 72px; padding: 12px 15px; border: 1px solid #cbd9e7; border-radius: 13px; background: linear-gradient(120deg, #f8fbff, #f1f6fc); cursor: pointer; list-style: none; transition: border-color .15s, box-shadow .15s, transform .15s; }
+    .model-picker summary::-webkit-details-marker { display: none; }
+    .model-picker summary:hover, .model-picker[open] summary { border-color: #6f9ccb; box-shadow: 0 5px 18px rgba(28,81,135,.11); }
+    .model-picker summary:focus-visible, .model-option:focus-visible { outline: 3px solid #81b7ec; outline-offset: 2px; }
+    .model-picker[aria-disabled="true"] summary { opacity: .65; cursor: default; }
+    .picker-icon { display: grid; place-items: center; flex: 0 0 44px; width: 44px; height: 44px; border-radius: 12px; background: #163f69; color: white; font-size: 13px; font-weight: 800; letter-spacing: .02em; }
+    .picker-copy { display: grid; gap: 3px; flex: 1; min-width: 0; }
+    .picker-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; line-height: 1.3; }
+    .picker-copy small { color: #61768c; font-size: 12px; }
+    .picker-chevron { color: #4c6d8b; font-size: 24px; line-height: 1; transition: transform .15s; }
+    .model-picker[open] .picker-chevron { transform: rotate(180deg); }
+    .model-menu { position: absolute; top: calc(100% + 8px); left: 0; right: 0; max-height: 350px; overflow-y: auto; padding: 8px; background: white; border: 1px solid #cdd9e5; border-radius: 13px; box-shadow: 0 20px 45px rgba(16,43,78,.2); }
+    .picker-group + .picker-group { border-top: 1px solid #e8edf3; margin-top: 8px; padding-top: 8px; }
+    .picker-group-title { color: #637b91; font-size: 11px; font-weight: 800; letter-spacing: .04em; padding: 7px 10px; }
+    .model-option { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 11px 12px; border: 1px solid transparent; border-radius: 10px; background: white; color: #21364c; font: inherit; text-align: left; cursor: pointer; }
+    .model-option:hover { background: #f3f8fd; }
+    .model-option[aria-current="true"] { background: #eaf4ff; border-color: #b9d7f3; }
+    .model-option strong { display: block; font-size: 14px; }
+    .model-option small { display: block; margin-top: 3px; color: #688098; font-size: 12px; }
+    .model-option .pill { flex: none; }
+    .switcher .muted { margin: 0; text-align: right; white-space: nowrap; }
     .hero { display: grid; grid-template-columns: 1.7fr 1fr; gap: 20px; margin-bottom: 20px; }
     .panel { background: #fff; border: 1px solid #e1e7ef; border-radius: 18px; box-shadow: 0 8px 30px rgba(25,45,73,.04); padding: 24px; }
     .hero-main { background: linear-gradient(125deg, #102b4e 0%, #1c4a71 100%); color: white; border: 0; }
@@ -112,7 +137,7 @@
     .empty { color: #7a8797; font-size: 14px; }
     .footer { margin-top: 24px; color: #748499; font-size: 12px; }
     #error { display: none; margin-bottom: 16px; padding: 12px 15px; border-radius: 9px; background: #fff0d3; color: #724e00; }
-    @media (max-width: 760px) { .wrap { padding: 24px 16px 42px; } .top { display: block; } .top > .pill { margin-top: 14px; } .hero, .grid { grid-template-columns: 1fr; } .metrics { grid-template-columns: repeat(3, 1fr); gap: 7px; } .metric { padding: 15px 12px; } .metric b { font-size: 23px; } .stage { padding: 18px; } .stage-head { grid-template-columns: 30px 1fr; } .stage .tags { grid-column: 2; justify-content: flex-start; } .work-items { margin-left: 0; } .work-item { grid-template-columns: 13px minmax(0,1fr); } .work-item .pill { grid-column: 2; justify-self: start; } }
+    @media (max-width: 760px) { .wrap { padding: 24px 16px 42px; } .top { display: block; } .top > .pill { margin-top: 14px; } .switcher { display: block; padding: 16px; } .picker-block { max-width: none; } .switcher .muted { margin-top: 10px; text-align: left; } .hero, .grid { grid-template-columns: 1fr; } .metrics { grid-template-columns: repeat(3, 1fr); gap: 7px; } .metric { padding: 15px 12px; } .metric b { font-size: 23px; } .stage { padding: 18px; } .stage-head { grid-template-columns: 30px 1fr; } .stage .tags { grid-column: 2; justify-content: flex-start; } .work-items { margin-left: 0; } .work-item { grid-template-columns: 13px minmax(0,1fr); } .work-item .pill { grid-column: 2; justify-self: start; } }
   </style>
 </head>
 <body>
@@ -122,6 +147,8 @@
       <div><p class="eyebrow">Model adaptation · Live work board</p><h1 id="title">正在读取看板…</h1><p class="sub" id="subtitle"></p></div>
       <span class="pill" id="freshness">等待状态</span>
     </header>
+    <section class="panel switcher" aria-label="模型选择"><div class="picker-block"><p class="picker-label">选择模型与运行</p><details class="model-picker" id="model-picker" aria-disabled="true"><summary aria-label="选择模型与运行"><span class="picker-icon" id="picker-icon" aria-hidden="true">M</span><span class="picker-copy"><strong id="selected-model">正在读取模型…</strong><small id="selected-run">请稍候</small></span><span class="picker-chevron" aria-hidden="true">⌄</span></summary><div class="model-menu" id="model-menu" aria-label="模型与运行列表"></div></details></div><p class="muted" id="workshop-count">正在查找工作坊中的模型</p></section>
+    <div id="model-details" hidden>
     <div class="hero">
       <section class="panel hero-main"><p class="eyebrow">当前结论</p><h2 id="summary">—</h2><div class="next"><strong>下一步</strong><p id="next-action">—</p></div></section>
       <section class="panel"><p class="eyebrow">必需阶段进展</p><div class="progress-number" id="progress">—</div><div class="muted" id="current-stage">—</div><div class="item-summary" id="item-progress">—</div><div class="segments" id="segments" aria-label="阶段进度"></div><div class="muted" id="updated">—</div></section>
@@ -130,6 +157,7 @@
     <section class="measurements" id="measurements-section" hidden><div class="section-head"><h2>模型实测数据</h2><small>仅显示已登记且有来源的测量</small></div><div id="measurement-error"></div><div class="metric-grid" id="metric-grid"></div><div class="chart-grid" id="chart-grid"></div></section>
     <section><div class="section-head"><h2>工作阶段</h2><small>流程状态与验收判定分别显示</small></div><div class="stages" id="stages"></div></section>
     <div class="grid"><section class="panel"><div class="section-head"><h2>ISSUE</h2><small>产生后即可查看</small></div><div id="issues"></div></section><section class="panel"><div class="section-head"><h2>报告</h2><small>草稿与最终版</small></div><div id="reports"></div></section></div>
+    </div>
     <p class="footer">本页仅在本机提供，只显示已经写入看板状态的事实；后台每 5 秒读取一次，不代表 Agent 内部推理的实时进度。</p>
   </main>
   <dialog id="doc-dialog" aria-labelledby="doc-title"><div class="doc-head"><h2 id="doc-title">文档</h2><button type="button" id="doc-close">关闭</button></div><div class="doc-body" id="doc-body">正在读取…</div></dialog>
@@ -204,7 +232,8 @@
     function linkedUrl(kind, id, raw, route) {
       const value = raw.trim().split(/[?#]/)[0];
       if (!value || value.startsWith("/") || /^[a-z][a-z0-9+.-]*:/i.test(value) || value.includes("\\")) return null;
-      return `/${route}/${kind}/${encodeURIComponent(id)}/${encodeURIComponent(value)}`;
+      const model = latestState?.model_key ? `?model=${encodeURIComponent(latestState.model_key)}` : "";
+      return `/${route}/${kind}/${encodeURIComponent(id)}/${encodeURIComponent(value)}${model}`;
     }
 
     function inlineMarkdown(text, kind, id) {
@@ -291,6 +320,7 @@
     $("doc-close").addEventListener("click", () => $("doc-dialog").close());
     function render(state) {
       latestState = state;
+      $("model-details").hidden = false;
       $("title").textContent = state.model + " · 适配看板";
       $("subtitle").textContent = `级别 ${state.level} · ${state.run_id}`;
       $("summary").textContent = state.summary || "尚无当前结论";
@@ -325,11 +355,63 @@
       $("freshness").className = "pill " + (old ? "blocked" : "done");
       $("updated").textContent = `最近更新：${isNaN(updated.getTime()) ? state.updated_at : updated.toLocaleString("zh-CN")}`;
     }
+    let refreshSequence = 0;
+    let modelOptionsSignature = "";
+    let selectedModelKey = null;
+    function showModels(models) {
+      const preferred = selectedModelKey && models.some(item => item.key === selectedModelKey)
+        ? selectedModelKey : new URLSearchParams(location.search).get("model");
+      const selected = models.some(item => item.key === preferred) ? preferred : models[0]?.key;
+      const signature = JSON.stringify(models.map(item => [item.key, item.model, item.run_id, item.level, item.status, item.current_stage]));
+      if (signature !== modelOptionsSignature) {
+        const groups = new Map();
+        for (const item of models) {
+          if (!groups.has(item.model)) groups.set(item.model, []);
+          groups.get(item.model).push(item);
+        }
+        $("model-menu").innerHTML = [...groups].map(([model, runs]) => `<div class="picker-group"><div class="picker-group-title">${esc(model)}</div>${runs.map(item => `<button type="button" class="model-option" data-model-key="${esc(item.key)}" aria-label="${esc(model)} · ${esc(item.run_id)} · ${esc(item.level)} · ${esc(processName[item.status] || item.status)}" aria-current="false"><span><strong>${esc(item.run_id)} · ${esc(item.level)}</strong><small>${esc(item.current_stage || "尚未开始阶段")}</small></span>${pill(processName[item.status] || item.status, item.status)}</button>`).join("")}</div>`).join("") || `<p class="empty" style="padding:8px 10px">暂无模型运行</p>`;
+        modelOptionsSignature = signature;
+      }
+      selectedModelKey = selected || null;
+      const current = models.find(item => item.key === selected);
+      $("model-picker").setAttribute("aria-disabled", String(!current));
+      if (!current) $("model-picker").open = false;
+      $("selected-model").textContent = current?.model || "暂无模型运行";
+      $("selected-run").textContent = current ? `${current.level} · ${current.run_id} · ${processName[current.status] || current.status}` : "请先建立一个 dashboard.json";
+      $("picker-icon").textContent = current ? current.model.slice(0, 2).toUpperCase() : "M";
+      for (const option of $("model-menu").querySelectorAll("[data-model-key]")) {
+        option.setAttribute("aria-current", String(option.dataset.modelKey === selected));
+      }
+      $("workshop-count").textContent = `${new Set(models.map(item => item.model)).size} 个模型 · ${models.length} 次运行`;
+      const url = new URL(location.href);
+      if (selected) url.searchParams.set("model", selected);
+      else url.searchParams.delete("model");
+      if (url.href !== location.href) history.replaceState(null, "", url);
+      return selected;
+    }
     async function refresh() {
+      const sequence = ++refreshSequence;
       try {
-        const response = await fetch("/api/state", {cache:"no-store"});
+        const listResponse = await fetch("/api/models", {cache:"no-store"});
+        if (!listResponse.ok) throw new Error(`HTTP ${listResponse.status}`);
+        const {models} = await listResponse.json();
+        if (sequence !== refreshSequence) return;
+        const selected = showModels(models);
+        if (!selected) {
+          latestState = null;
+          $("model-details").hidden = true;
+          $("title").textContent = "暂无模型看板";
+          $("subtitle").textContent = "工作坊中尚未发现 dashboard.json";
+          $("freshness").textContent = "等待数据";
+          $("freshness").className = "pill";
+          $("error").style.display = "none";
+          return;
+        }
+        const response = await fetch(`/api/state?model=${encodeURIComponent(selected)}`, {cache:"no-store"});
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        render(await response.json());
+        const state = await response.json();
+        if (sequence !== refreshSequence || selectedModelKey !== selected) return;
+        render(state);
         $("error").style.display = "none";
       } catch (error) {
         $("error").textContent = `暂时无法读取看板状态：${error.message}`;
@@ -338,6 +420,40 @@
         $("freshness").className = "pill blocked";
       }
     }
+    $("model-menu").addEventListener("click", event => {
+      const option = event.target.closest("[data-model-key]");
+      if (!option) return;
+      $("model-picker").open = false;
+      $("model-picker").querySelector("summary").focus();
+      if (option.dataset.modelKey === selectedModelKey) return;
+      if ($("doc-dialog").open) $("doc-dialog").close();
+      selectedModelKey = option.dataset.modelKey;
+      latestState = null;
+      $("model-details").hidden = true;
+      const url = new URL(location.href);
+      url.searchParams.set("model", selectedModelKey);
+      history.replaceState(null, "", url);
+      refresh();
+    });
+    $("model-picker").addEventListener("click", event => {
+      if (event.target.closest("summary") && $("model-picker").getAttribute("aria-disabled") === "true") event.preventDefault();
+    });
+    $("model-picker").addEventListener("keydown", event => {
+      const options = [...$("model-menu").querySelectorAll(".model-option")];
+      if (event.key === "Escape") {
+        $("model-picker").open = false;
+        $("model-picker").querySelector("summary").focus();
+      } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        $("model-picker").open = true;
+        const index = options.indexOf(document.activeElement);
+        const next = event.key === "ArrowDown" ? (index + 1) % options.length : (index < 0 ? options.length - 1 : (index - 1 + options.length) % options.length);
+        options[next]?.focus();
+      }
+    });
+    document.addEventListener("click", event => {
+      if (!$("model-picker").contains(event.target)) $("model-picker").open = false;
+    });
     refresh();
     setInterval(refresh, 5000);
     document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
