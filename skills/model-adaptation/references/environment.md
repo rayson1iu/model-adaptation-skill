@@ -2,12 +2,13 @@
 
 ## 工作区布局
 
-已有项目优先沿用其路径与入口。新工作区默认使用以下结构，根目录由任务指定；未指定且尚无项目布局时使用 `~/workspace`：
+已有项目优先沿用其路径与入口。workshop 根目录由任务指定；未指定且尚无项目布局时使用 `/workshop`：
 
 ```text
 <workspace>/
   AGENTS.md                 项目公共规范（已有则不擅自重写）
   README.md                 工作区总览
+  dashboard/                用户启用看板时保存看板自身状态与索引
   model_zoo/<model>/        上游源码，保留 Git 历史
   repo/MODELS.md            模型登记
   repo/<model>/

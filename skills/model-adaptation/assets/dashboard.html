@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>模型适配 · 工作看板</title>
+  <title>modelZoo dashboard</title>
   <style>
     :root { color-scheme: light; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: #f4f6f9; color: #182536; }
     * { box-sizing: border-box; }
@@ -138,28 +138,101 @@
     .footer { margin-top: 24px; color: #748499; font-size: 12px; }
     #error { display: none; margin-bottom: 16px; padding: 12px 15px; border-radius: 9px; background: #fff0d3; color: #724e00; }
     @media (max-width: 760px) { .wrap { padding: 24px 16px 42px; } .top { display: block; } .top > .pill { margin-top: 14px; } .switcher { display: block; padding: 16px; } .picker-block { max-width: none; } .switcher .muted { margin-top: 10px; text-align: left; } .hero, .grid { grid-template-columns: 1fr; } .metrics { grid-template-columns: repeat(3, 1fr); gap: 7px; } .metric { padding: 15px 12px; } .metric b { font-size: 23px; } .stage { padding: 18px; } .stage-head { grid-template-columns: 30px 1fr; } .stage .tags { grid-column: 2; justify-content: flex-start; } .work-items { margin-left: 0; } .work-item { grid-template-columns: 13px minmax(0,1fr); } .work-item .pill { grid-column: 2; justify-self: start; } }
+    /* Workshop dashboard layout */
+    html { scroll-behavior: smooth; }
+    body { background: #f3f5f9; }
+    .app-shell { min-height: 100vh; display: grid; grid-template-columns: 220px minmax(0, 1fr); }
+    .sidebar { background: #17253b; color: #e6edf6; padding: 28px 16px; }
+    .sidebar-inner { position: sticky; top: 28px; }
+    .brand { display: flex; align-items: center; gap: 11px; padding: 0 8px 30px; font-size: 15px; font-weight: 750; }
+    .brand-mark { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; color: white; background: #3978d4; font-size: 13px; }
+    .nav-label { margin: 0 10px 9px; color: #94a6bd; font-size: 11px; font-weight: 700; letter-spacing: .08em; }
+    .sidebar nav { display: grid; gap: 4px; }
+    .sidebar nav a { padding: 10px 12px; border-radius: 8px; color: #cbd6e4; text-decoration: none; font-size: 14px; }
+    .sidebar nav a:hover, .sidebar nav a:focus-visible { background: #2a3b55; color: white; }
+    .sidebar-note { margin: 32px 10px 0; color: #9baec4; font-size: 12px; line-height: 1.6; }
+    .wrap { width: 100%; max-width: 1500px; padding: 30px 34px 55px; }
+    .top { align-items: center; margin-bottom: 20px; }
+    .top h1 { font-size: clamp(24px, 2.5vw, 31px); }
+    .top .eyebrow { color: #70839a; letter-spacing: .08em; }
+    .panel { border-radius: 10px; box-shadow: 0 2px 8px rgba(25,45,73,.035); }
+    .switcher { border-radius: 10px; }
+    .hero { grid-template-columns: 1.7fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .hero-main { background: white; color: #182536; border: 1px solid #e1e7ef; border-left: 4px solid #3978d4; }
+    .hero-main .eyebrow, .next strong { color: #617b95; }
+    .hero-main h2 { font-size: 20px; }
+    .hero-main p { color: #405b74; }
+    .next { border-color: #e9eef4; }
+    .metrics { margin-bottom: 26px; }
+    .metric b { color: #1d3f67; }
+    @media (max-width: 900px) { .app-shell { grid-template-columns: 1fr; } .sidebar { padding: 13px 16px; } .sidebar-inner { position: static; display: flex; align-items: center; gap: 16px; overflow-x: auto; } .brand { padding: 0; white-space: nowrap; } .nav-label, .sidebar-note { display: none; } .sidebar nav { display: flex; white-space: nowrap; } .sidebar nav a { padding: 8px 10px; } .wrap { padding: 24px 16px 42px; } }
+    @media (max-width: 760px) { .top { display: block; } .hero { grid-template-columns: 1fr; } }
+    .app-shell { grid-template-columns: 180px minmax(0, 1fr); }
+    .sidebar { padding: 24px 10px; }
+    .brand { padding: 0 4px 28px; font-size: 13px; }
+    .brand-mark { width: 30px; height: 30px; flex: none; }
+    .sidebar .model-menu { position: static; max-height: calc(100vh - 160px); overflow-y: auto; padding: 0; background: transparent; border: 0; box-shadow: none; }
+    .sidebar .picker-group + .picker-group { border-color: #34445b; }
+    .sidebar .picker-group-title { color: #d5e1ee; padding: 8px 7px; overflow-wrap: anywhere; }
+    .sidebar .model-option { display: block; padding: 9px 8px; color: #becfe1; background: transparent; border-color: transparent; }
+    .sidebar .model-option:hover { background: #263b57; }
+    .sidebar .model-option[aria-current="true"] { color: white; background: #2e4f78; border-color: #4d79ac; }
+    .sidebar .model-option strong { font-size: 12px; overflow-wrap: anywhere; }
+    .sidebar .model-option small { color: #a7bad0; font-size: 11px; overflow-wrap: anywhere; }
+    .sidebar .model-option .pill { margin-top: 6px; padding: 3px 7px; font-size: 10px; }
+    .sidebar .empty { color: #a7bad0; }
+    .sidebar-count { margin: 0 7px 12px; color: #97abc3; font-size: 11px; }
+    @media (max-width: 900px) { .app-shell { grid-template-columns: 1fr; } .sidebar-inner { display: block; } .brand { padding-bottom: 12px; } .sidebar .nav-label { display: block; } .sidebar .model-menu { display: flex; gap: 8px; max-height: none; overflow-x: auto; } .sidebar .picker-group { min-width: 155px; border: 0; padding: 0; margin: 0; } .sidebar .picker-group + .picker-group { border: 0; padding: 0; margin: 0; } .sidebar-count { margin-bottom: 5px; } }
+    .page-tabs { display: flex; gap: 6px; border-bottom: 1px solid #dce4ee; margin: 0 0 22px; overflow-x: auto; }
+    .page-tabs button { padding: 11px 16px; border: 0; border-bottom: 3px solid transparent; background: transparent; color: #60758c; font: inherit; font-size: 14px; font-weight: 700; white-space: nowrap; cursor: pointer; }
+    .page-tabs button:hover { color: #245a9e; }
+    .page-tabs button[aria-selected="true"] { color: #215eaa; border-bottom-color: #3978d4; }
+    .page-tabs button:focus-visible { outline: 2px solid #3978d4; outline-offset: -2px; }
+    .data-empty { padding: 30px; }
+    .wrap { margin: 0 auto; align-self: start; }
+    .app-shell { align-items: start; }
+    .sidebar { min-height: 100vh; }
+    .sidebar .model-menu { display: grid; align-content: start; gap: 4px; }
+    .sidebar .model-option { width: 100%; }
+    .sidebar .model-option strong { font-size: 13px; }
+    .measure-card.pending .value { color: #8799aa; }
+    .stages { grid-template-columns: repeat(auto-fit, minmax(min(100%, 390px), 1fr)); align-items: start; gap: 10px; }
+    .stage { padding: 14px 16px; }
+    .stage-head { grid-template-columns: 26px minmax(0, 1fr) auto; gap: 9px; }
+    .stage .index { width: 26px; height: 26px; font-size: 12px; }
+    .stage h3 { font-size: 15px; margin: 2px 0 3px; }
+    .stage .tags { gap: 4px; }
+    .stage .pill { padding: 4px 7px; font-size: 11px; }
+    .work-items { margin: 9px 0 0; }
+    .work-item { grid-template-columns: 10px minmax(0, 1fr) auto; gap: 8px; padding: 7px 0; }
+    .work-dot { width: 8px; height: 8px; }
+    .work-name { font-size: 13px; }
+    .work-note { margin-top: 2px; font-size: 12px; }
+    .item-summary { margin-top: 3px; }
+    @media (max-width: 900px) { .sidebar { min-height: 0; } .sidebar .model-menu { display: flex; } .sidebar .model-option { width: auto; min-width: 130px; } }
+    @media (max-width: 760px) { .stage-head { grid-template-columns: 26px minmax(0, 1fr) auto; } .stage .tags { grid-column: auto; justify-content: flex-end; } .work-item { grid-template-columns: 10px minmax(0, 1fr) auto; } .work-item .pill { grid-column: auto; } }
+    @media (max-width: 430px) { .stage-head { grid-template-columns: 26px minmax(0, 1fr); } .stage .tags { grid-column: 2; justify-content: flex-start; } }
   </style>
 </head>
 <body>
-  <main class="wrap">
+  <div class="app-shell"><aside class="sidebar"><div class="sidebar-inner"><div class="brand"><span class="brand-mark">MA</span><span>modelZoo dashboard</span></div><p class="nav-label">选择模型</p><p class="sidebar-count" id="workshop-count">正在查找模型…</p><nav class="model-menu" id="model-menu" aria-label="选择模型"></nav></div></aside><main class="wrap" id="overview">
     <div id="error" role="alert"></div>
     <header class="top">
-      <div><p class="eyebrow">Model adaptation · Live work board</p><h1 id="title">正在读取看板…</h1><p class="sub" id="subtitle"></p></div>
+      <div><h1 id="title">正在读取看板…</h1><p class="sub" id="subtitle"></p></div>
       <span class="pill" id="freshness">等待状态</span>
     </header>
-    <section class="panel switcher" aria-label="模型选择"><div class="picker-block"><p class="picker-label">选择模型与运行</p><details class="model-picker" id="model-picker" aria-disabled="true"><summary aria-label="选择模型与运行"><span class="picker-icon" id="picker-icon" aria-hidden="true">M</span><span class="picker-copy"><strong id="selected-model">正在读取模型…</strong><small id="selected-run">请稍候</small></span><span class="picker-chevron" aria-hidden="true">⌄</span></summary><div class="model-menu" id="model-menu" aria-label="模型与运行列表"></div></details></div><p class="muted" id="workshop-count">正在查找工作坊中的模型</p></section>
     <div id="model-details" hidden>
-    <div class="hero">
-      <section class="panel hero-main"><p class="eyebrow">当前结论</p><h2 id="summary">—</h2><div class="next"><strong>下一步</strong><p id="next-action">—</p></div></section>
-      <section class="panel"><p class="eyebrow">必需阶段进展</p><div class="progress-number" id="progress">—</div><div class="muted" id="current-stage">—</div><div class="item-summary" id="item-progress">—</div><div class="segments" id="segments" aria-label="阶段进度"></div><div class="muted" id="updated">—</div></section>
+    <div class="page-tabs" role="tablist" aria-label="模型详情"><button type="button" role="tab" id="tab-workflow" aria-controls="page-workflow" aria-selected="true" tabindex="0">工作阶段</button><button type="button" role="tab" id="tab-data" aria-controls="page-data" aria-selected="false" tabindex="-1">模型数据</button><button type="button" role="tab" id="tab-documents" aria-controls="page-documents" aria-selected="false" tabindex="-1">相关文档</button></div>
+    <div id="page-workflow" role="tabpanel" aria-labelledby="tab-workflow" tabindex="0">
+    <section id="workflow"><div class="section-head"><h2>工作阶段</h2><small>流程状态与验收判定分别显示</small></div><div class="stages" id="stages"></div></section>
     </div>
-    <div class="metrics" aria-label="产物统计"><div class="panel metric"><b id="issue-count">0</b><span>ISSUE</span></div><div class="panel metric"><b id="report-count">0</b><span>报告</span></div><div class="panel metric"><b id="open-count">0</b><span>待处理 ISSUE</span></div></div>
-    <section class="measurements" id="measurements-section" hidden><div class="section-head"><h2>模型实测数据</h2><small>仅显示已登记且有来源的测量</small></div><div id="measurement-error"></div><div class="metric-grid" id="metric-grid"></div><div class="chart-grid" id="chart-grid"></div></section>
-    <section><div class="section-head"><h2>工作阶段</h2><small>流程状态与验收判定分别显示</small></div><div class="stages" id="stages"></div></section>
-    <div class="grid"><section class="panel"><div class="section-head"><h2>ISSUE</h2><small>产生后即可查看</small></div><div id="issues"></div></section><section class="panel"><div class="section-head"><h2>报告</h2><small>草稿与最终版</small></div><div id="reports"></div></section></div>
+    <div id="page-data" role="tabpanel" aria-labelledby="tab-data" tabindex="0" hidden><section class="measurements" id="measurements-section"><div class="section-head"><h2>模型实测数据</h2><small>未测数据以 — 显示</small></div><div id="measurement-error"></div><div class="metric-grid" id="metric-grid"></div><div class="chart-grid" id="chart-grid"></div></section></div>
+    <div id="page-documents" role="tabpanel" aria-labelledby="tab-documents" tabindex="0" hidden><div class="metrics" aria-label="产物统计"><div class="panel metric"><b id="issue-count">0</b><span>ISSUE</span></div><div class="panel metric"><b id="report-count">0</b><span>报告</span></div><div class="panel metric"><b id="open-count">0</b><span>待处理 ISSUE</span></div></div>
+    <div class="grid" id="artifacts"><section class="panel"><div class="section-head"><h2>ISSUE</h2><small>产生后即可查看</small></div><div id="issues"></div></section><section class="panel"><div class="section-head"><h2>报告</h2><small>草稿与最终版</small></div><div id="reports"></div></section></div>
+    </div>
     </div>
     <p class="footer">本页仅在本机提供，只显示已经写入看板状态的事实；后台每 5 秒读取一次，不代表 Agent 内部推理的实时进度。</p>
-  </main>
+  </main></div>
   <dialog id="doc-dialog" aria-labelledby="doc-title"><div class="doc-head"><h2 id="doc-title">文档</h2><button type="button" id="doc-close">关闭</button></div><div class="doc-body" id="doc-body">正在读取…</div></dialog>
   <script>
     const $ = id => document.getElementById(id);
@@ -217,9 +290,22 @@
 
     function renderMeasurements(state) {
       const metrics = state.metrics || [], charts = state.charts || [];
-      $("measurements-section").hidden = !metrics.length && !charts.length && !state.measurement_error;
       $("measurement-error").innerHTML = state.measurement_error ? `<p class="measure-error">测量数据暂不可用：${esc(state.measurement_error)}</p>` : "";
-      $("metric-grid").innerHTML = metrics.map(metric => {
+      const slots = [
+        {id:"latency", label:"推理延迟", aliases:["latency", "latency_p50"]},
+        {id:"memory", label:"显存占用", aliases:["memory", "peak_memory", "peak_memory_mb"]},
+        {id:"accuracy", label:"模型精度 / 误差", aliases:["accuracy", "max_error"]},
+        {id:"throughput", label:"吞吐量", aliases:["throughput"]},
+        ...(state.level === "P0" ? [{id:"training_loss", label:"训练损失", aliases:["training_loss"]}] : [])
+      ];
+      const used = new Set();
+      const presetCards = slots.map(slot => {
+        const metric = metrics.find(item => !used.has(item) && (item.slot ? item.slot === slot.id : slot.aliases.includes(item.id)));
+        if (metric) { used.add(metric); return metric; }
+        return {placeholder:true, label:slot.label};
+      });
+      $("metric-grid").innerHTML = [...presetCards, ...metrics.filter(metric => !used.has(metric))].map(metric => {
+        if (metric.placeholder) return `<article class="panel measure-card pending"><span class="label">${esc(metric.label)}</span><span class="value">—</span><div class="detail">暂无数据</div></article>`;
         const status = metric.status || "diagnostic";
         const statusText = {pass:"通过",fail:"未达门槛",diagnostic:"诊断数据"}[status] || status;
         const details = [metric.context, metric.reference && `参考：${metric.reference}`, metric.threshold && `门槛：${metric.threshold}`].filter(Boolean).map(esc).join(" · ");
@@ -321,21 +407,9 @@
     function render(state) {
       latestState = state;
       $("model-details").hidden = false;
-      $("title").textContent = state.model + " · 适配看板";
+      $("title").textContent = state.model;
       $("subtitle").textContent = `级别 ${state.level} · ${state.run_id}`;
-      $("summary").textContent = state.summary || "尚无当前结论";
-      $("next-action").textContent = state.next_action || "尚未指定";
       const stages = state.stages || [];
-      const required = stages.filter(stage => stage.required);
-      const done = required.filter(stage => stage.process === "done").length;
-      const current = stages.find(stage => stage.process === "running") || stages.find(stage => stage.process === "blocked") || stages.find(stage => stage.process === "pending");
-      const currentItem = current && ((current.items || []).find(item => item.status === "running") || (current.items || []).find(item => item.status === "blocked") || (current.items || []).find(item => item.status === "pending"));
-      const allItems = stages.flatMap(stage => stage.items || []);
-      const handledItems = allItems.filter(item => item.status === "done" || item.status === "skipped").length;
-      $("progress").textContent = `${done} / ${required.length}`;
-      $("current-stage").textContent = current ? `当前：${current.label}${currentItem ? " / " + currentItem.label : ""}` : "所有阶段已结束";
-      $("item-progress").textContent = allItems.length ? `工作项已处理 ${handledItems} / ${allItems.length}` : "等待添加工作项";
-      $("segments").innerHTML = required.map(stage => `<span class="segment ${safeClass(stage.process)}" title="${esc(stage.label + "：" + (processName[stage.process] || stage.process))}"></span>`).join("");
       renderMeasurements(state);
       $("stages").innerHTML = stages.map((stage, index) => {
         const items = stage.items || [];
@@ -353,7 +427,7 @@
       const old = stages.some(stage => stage.process === "running") && Date.now() - updated.getTime() > 10 * 60 * 1000;
       $("freshness").textContent = old ? "状态可能已过期" : "自动刷新中";
       $("freshness").className = "pill " + (old ? "blocked" : "done");
-      $("updated").textContent = `最近更新：${isNaN(updated.getTime()) ? state.updated_at : updated.toLocaleString("zh-CN")}`;
+      $("subtitle").textContent += ` · 最近更新：${isNaN(updated.getTime()) ? state.updated_at : updated.toLocaleString("zh-CN")}`;
     }
     let refreshSequence = 0;
     let modelOptionsSignature = "";
@@ -361,28 +435,21 @@
     function showModels(models) {
       const preferred = selectedModelKey && models.some(item => item.key === selectedModelKey)
         ? selectedModelKey : new URLSearchParams(location.search).get("model");
-      const selected = models.some(item => item.key === preferred) ? preferred : models[0]?.key;
-      const signature = JSON.stringify(models.map(item => [item.key, item.model, item.run_id, item.level, item.status, item.current_stage]));
+      const groups = new Map();
+      for (const item of models) if (!groups.has(item.model)) groups.set(item.model, item);
+      const choices = [...groups.values()].sort((a, b) => a.model.localeCompare(b.model, 'zh-CN', {numeric:true, sensitivity:'base'}));
+      const preferredModel = models.find(item => item.key === preferred)?.model;
+      const selected = groups.get(preferredModel)?.key || choices[0]?.key;
+      const signature = JSON.stringify(choices.map(item => [item.key, item.model]));
       if (signature !== modelOptionsSignature) {
-        const groups = new Map();
-        for (const item of models) {
-          if (!groups.has(item.model)) groups.set(item.model, []);
-          groups.get(item.model).push(item);
-        }
-        $("model-menu").innerHTML = [...groups].map(([model, runs]) => `<div class="picker-group"><div class="picker-group-title">${esc(model)}</div>${runs.map(item => `<button type="button" class="model-option" data-model-key="${esc(item.key)}" aria-label="${esc(model)} · ${esc(item.run_id)} · ${esc(item.level)} · ${esc(processName[item.status] || item.status)}" aria-current="false"><span><strong>${esc(item.run_id)} · ${esc(item.level)}</strong><small>${esc(item.current_stage || "尚未开始阶段")}</small></span>${pill(processName[item.status] || item.status, item.status)}</button>`).join("")}</div>`).join("") || `<p class="empty" style="padding:8px 10px">暂无模型运行</p>`;
+        $("model-menu").innerHTML = choices.map(item => `<button type="button" class="model-option" data-model-key="${esc(item.key)}" aria-current="false"><strong>${esc(item.model)}</strong></button>`).join("") || `<p class="empty" style="padding:8px 10px">暂无模型</p>`;
         modelOptionsSignature = signature;
       }
       selectedModelKey = selected || null;
-      const current = models.find(item => item.key === selected);
-      $("model-picker").setAttribute("aria-disabled", String(!current));
-      if (!current) $("model-picker").open = false;
-      $("selected-model").textContent = current?.model || "暂无模型运行";
-      $("selected-run").textContent = current ? `${current.level} · ${current.run_id} · ${processName[current.status] || current.status}` : "请先建立一个 dashboard.json";
-      $("picker-icon").textContent = current ? current.model.slice(0, 2).toUpperCase() : "M";
       for (const option of $("model-menu").querySelectorAll("[data-model-key]")) {
         option.setAttribute("aria-current", String(option.dataset.modelKey === selected));
       }
-      $("workshop-count").textContent = `${new Set(models.map(item => item.model)).size} 个模型 · ${models.length} 次运行`;
+      $("workshop-count").textContent = `${choices.length} 个模型`;
       const url = new URL(location.href);
       if (selected) url.searchParams.set("model", selected);
       else url.searchParams.delete("model");
@@ -423,11 +490,10 @@
     $("model-menu").addEventListener("click", event => {
       const option = event.target.closest("[data-model-key]");
       if (!option) return;
-      $("model-picker").open = false;
-      $("model-picker").querySelector("summary").focus();
       if (option.dataset.modelKey === selectedModelKey) return;
       if ($("doc-dialog").open) $("doc-dialog").close();
       selectedModelKey = option.dataset.modelKey;
+      window.scrollTo({top:0, behavior:"auto"});
       latestState = null;
       $("model-details").hidden = true;
       const url = new URL(location.href);
@@ -435,25 +501,31 @@
       history.replaceState(null, "", url);
       refresh();
     });
-    $("model-picker").addEventListener("click", event => {
-      if (event.target.closest("summary") && $("model-picker").getAttribute("aria-disabled") === "true") event.preventDefault();
-    });
-    $("model-picker").addEventListener("keydown", event => {
-      const options = [...$("model-menu").querySelectorAll(".model-option")];
-      if (event.key === "Escape") {
-        $("model-picker").open = false;
-        $("model-picker").querySelector("summary").focus();
-      } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-        event.preventDefault();
-        $("model-picker").open = true;
-        const index = options.indexOf(document.activeElement);
-        const next = event.key === "ArrowDown" ? (index + 1) % options.length : (index < 0 ? options.length - 1 : (index - 1 + options.length) % options.length);
-        options[next]?.focus();
+    const pageTabs = [...document.querySelectorAll('.page-tabs [role="tab"]')];
+    function selectPage(tab, focus = false) {
+      for (const item of pageTabs) {
+        const selected = item === tab;
+        item.setAttribute("aria-selected", String(selected));
+        item.tabIndex = selected ? 0 : -1;
+        $(item.getAttribute("aria-controls")).hidden = !selected;
       }
-    });
-    document.addEventListener("click", event => {
-      if (!$("model-picker").contains(event.target)) $("model-picker").open = false;
-    });
+      window.scrollTo({top:0, behavior:"auto"});
+      if (focus) tab.focus();
+    }
+    for (const tab of pageTabs) {
+      tab.addEventListener("click", () => selectPage(tab));
+      tab.addEventListener("keydown", event => {
+        const index = pageTabs.indexOf(tab);
+        let next = index;
+        if (event.key === "ArrowRight") next = (index + 1) % pageTabs.length;
+        else if (event.key === "ArrowLeft") next = (index - 1 + pageTabs.length) % pageTabs.length;
+        else if (event.key === "Home") next = 0;
+        else if (event.key === "End") next = pageTabs.length - 1;
+        else return;
+        event.preventDefault();
+        selectPage(pageTabs[next], true);
+      });
+    }
     refresh();
     setInterval(refresh, 5000);
     document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });

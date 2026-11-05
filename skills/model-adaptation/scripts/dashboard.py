@@ -2,6 +2,7 @@
 """Maintain and serve a local, read-only model-adaptation dashboard."""
 
 import argparse
+import csv
 from datetime import datetime
 import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -39,10 +40,10 @@ STAGES = {
 ITEMS = {
     "P0": {
         "training": [
-            ("plan", "冻结训练方案与完成条件"),
+            ("plan", "确认短程训练验证条件"),
             ("data", "核对数据、权重与训练环境"),
-            ("run", "执行约定训练并保存检查点"),
-            ("evaluate", "核对训练指标与完成依据"),
+            ("run", "完成前向、反向与参数更新"),
+            ("evaluate", "核对 loss、梯度与参数更新"),
         ],
         "inference": [
             ("device", "确认目标 GPU 与运行环境"),
@@ -151,6 +152,10 @@ def workspace_path(state, given, must_exist=True):
     candidate = candidate.resolve()
     if not candidate.is_relative_to(root):
         raise ValueError("Artifact must be inside the selected workspace")
+    if state.get("source_roots"):
+        allowed = [(root / name).resolve() for name in state["source_roots"]]
+        if not any(candidate.is_relative_to(folder) and folder.is_relative_to(root) for folder in allowed):
+            raise ValueError("Source must be inside model_zoo or repo")
     if must_exist and not candidate.is_file():
         raise ValueError(f"Artifact file does not exist: {candidate}")
     return str(candidate.relative_to(root))
@@ -160,11 +165,13 @@ def command_init(args):
     state_path = Path(args.state).expanduser().resolve()
     if state_path.exists():
         raise ValueError(f"Dashboard state already exists: {state_path}")
-    workspace = Path(args.workspace).expanduser().resolve()
+    workspace = Path(args.workshop or args.workspace).expanduser().resolve()
     if not workspace.is_dir():
         raise ValueError(f"Workspace does not exist: {workspace}")
     if not state_path.is_relative_to(workspace):
         raise ValueError("Dashboard state must be inside the selected workspace")
+    if args.workshop and not state_path.is_relative_to((workspace / "dashboard").resolve()):
+        raise ValueError("Workshop dashboard state must be inside workshop/dashboard")
     state = {
         "schema_version": 1,
         "model": args.model,
@@ -186,6 +193,8 @@ def command_init(args):
         "issues": [],
         "reports": [],
     }
+    if args.workshop:
+        state["source_roots"] = ["model_zoo", "repo"]
     save_state(state_path, state)
     print(state_path)
 
@@ -283,7 +292,50 @@ def linked_target(state, kind, identifier, relative, allowed):
     root = Path(state["workspace_root"]).resolve()
     if not candidate.is_relative_to(root) or not candidate.is_file() or candidate.suffix.lower() not in allowed:
         raise ValueError("Linked file is unavailable")
+    workspace_path(state, str(candidate))
     return candidate
+
+
+def chart_points_from_source(state, entry, limit):
+    config = entry.get("data")
+    if not isinstance(config, dict) or not all(isinstance(config.get(k), str) and config[k] for k in ("label_column", "value_column")):
+        raise ValueError("Chart data needs label_column and value_column")
+    if "array_key" in config and not isinstance(config["array_key"], str):
+        raise ValueError("Chart array_key must be a string")
+    path = Path(state["workspace_root"], workspace_path(state, entry["source"]))
+    if path.stat().st_size > 5_000_000:
+        raise ValueError("Chart source exceeds 5 MB; prepare a smaller summary")
+    suffix = path.suffix.lower()
+    with path.open(encoding="utf-8-sig", newline="") as handle:
+        if suffix in {".csv", ".tsv"}:
+            rows = csv.DictReader(handle, delimiter="," if suffix == ".csv" else "\t")
+        elif suffix == ".json":
+            rows = json.load(handle)
+            if config.get("array_key"):
+                if not isinstance(rows, dict):
+                    raise ValueError("Chart JSON must contain the requested array")
+                rows = rows.get(config["array_key"])
+            if not isinstance(rows, list):
+                raise ValueError("Chart JSON must be an array of objects")
+        else:
+            raise ValueError("Chart column data requires CSV, TSV or JSON")
+        points = []
+        for row in rows:
+            if not isinstance(row, dict) or config["label_column"] not in row or config["value_column"] not in row:
+                raise ValueError("Chart source is missing a requested column")
+            raw = row[config["value_column"]]
+            if isinstance(raw, bool) or raw is None:
+                raise ValueError("Chart value must be numeric")
+            try:
+                value = float(raw)
+            except (ValueError, TypeError):
+                raise ValueError("Chart value must be numeric") from None
+            if not math.isfinite(value):
+                raise ValueError("Chart point value must be finite")
+            points.append({"label": str(row[config["label_column"]]), "value": value})
+            if len(points) > limit:
+                raise ValueError(f"Chart has more than {limit} points; prepare a smaller summary")
+    return points
 
 
 def read_measurements(state):
@@ -316,6 +368,8 @@ def read_measurements(state):
             if not isinstance(source, str) or Path(workspace_path(state, source)).suffix.lower() not in DATA_SUFFIXES:
                 raise ValueError("Measurement source must be an existing data or Markdown file")
             if kind == "metric":
+                if "slot" in entry and (not isinstance(entry["slot"], str) or not entry["slot"]):
+                    raise ValueError("Metric slot must be a nonempty string")
                 value = entry.get("value")
                 if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
                     raise ValueError("Metric value must be a finite number")
@@ -332,6 +386,9 @@ def read_measurements(state):
                     raise ValueError("Chart threshold must be a finite number")
                 points = entry.get("points")
                 limit = 40 if entry["type"] == "bar" else 600
+                if points is None and "data" in entry:
+                    points = chart_points_from_source(state, entry, limit)
+                    entry["points"] = points
                 if not isinstance(points, list) or not points or len(points) > limit:
                     raise ValueError(f"{entry['type']} chart needs 1 to {limit} points")
                 for point in points:
@@ -362,7 +419,7 @@ def command_measurements(args):
 
 def public_state(state, model_key):
     root = Path(state["workspace_root"]).resolve()
-    result = {key: value for key, value in state.items() if key != "workspace_root"}
+    result = {key: value for key, value in state.items() if key not in ("workspace_root", "source_roots")}
     result["model_key"] = model_key
     query = f"?model={model_key}"
     for kind, plural in (("issue", "issues"), ("report", "reports")):
@@ -370,10 +427,10 @@ def public_state(state, model_key):
         for entry in state[plural]:
             item = dict(entry)
             try:
-                target = (root / entry["path"]).resolve()
+                target = root / workspace_path(state, entry["path"])
                 if target.is_relative_to(root) and target.is_file():
                     item["url"] = f"/artifact/{kind}/{quote(entry['id'], safe='')}{query}"
-            except (KeyError, OSError):
+            except (KeyError, OSError, ValueError):
                 pass
             result[plural].append(item)
     try:
@@ -410,7 +467,8 @@ def model_summary(state, key):
 
 def command_serve(args):
     state_path = Path(args.state).expanduser().resolve() if args.state else None
-    workshop = Path(args.workspace).expanduser().resolve() if args.workspace else None
+    workshop_mode = bool(args.workshop)
+    workshop = Path(args.workshop or args.workspace).expanduser().resolve() if (args.workshop or args.workspace) else None
     if state_path:
         load_state(state_path)
     elif not workshop.is_dir():
@@ -422,9 +480,11 @@ def command_serve(args):
             boundary = state_path.parent
         else:
             paths = []
-            boundary = workshop
+            boundary = (workshop / "dashboard").resolve() if workshop_mode else workshop
+            if not boundary.is_relative_to(workshop):
+                return {}
             ignored = {".git", ".venv", "venv", "node_modules", "__pycache__", ".cache"}
-            for folder, dirs, files in os.walk(workshop, followlinks=False):
+            for folder, dirs, files in os.walk(boundary, followlinks=False):
                 dirs[:] = [name for name in dirs if name not in ignored and not (Path(folder) / name).is_symlink()]
                 if "dashboard.json" in files:
                     paths.append(Path(folder) / "dashboard.json")
@@ -438,6 +498,10 @@ def command_serve(args):
                 root = Path(state["workspace_root"]).resolve()
                 if workshop and (not root.is_relative_to(workshop) or not resolved.is_relative_to(root)):
                     continue
+                if workshop_mode:
+                    if root != workshop:
+                        continue
+                    state["source_roots"] = ["model_zoo", "repo"]
                 if not all(isinstance(state.get(name), str) for name in ("model", "level", "run_id", "updated_at")):
                     continue
                 key = hashlib.sha256(str(resolved.relative_to(boundary)).encode("utf-8")).hexdigest()[:16]
@@ -536,7 +600,9 @@ def make_parser():
     sub = parser.add_subparsers(dest="command", required=True)
     init = sub.add_parser("init", help="Create dashboard state for one adaptation task")
     init.add_argument("--state", required=True)
-    init.add_argument("--workspace", required=True)
+    init_source = init.add_mutually_exclusive_group(required=True)
+    init_source.add_argument("--workspace")
+    init_source.add_argument("--workshop", help="Workshop root; state lives in dashboard, sources in model_zoo/repo")
     init.add_argument("--model", required=True)
     init.add_argument("--level", choices=STAGES, required=True)
     init.add_argument("--run-id", required=True)
@@ -585,6 +651,7 @@ def make_parser():
     source = serve.add_mutually_exclusive_group(required=True)
     source.add_argument("--state", help="Single-run dashboard state")
     source.add_argument("--workspace", help="Workshop root containing dashboard.json files")
+    source.add_argument("--workshop", help="Workshop root; discover dashboard/dashboard.json states")
     serve.add_argument("--port", type=int, default=8765)
     serve.set_defaults(func=command_serve)
     return parser
