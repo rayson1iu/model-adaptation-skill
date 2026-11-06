@@ -351,7 +351,7 @@ def read_measurements(state):
         raise ValueError("Measurement summary needs metrics and charts arrays")
     seen = set()
     for kind, entries in (("metric", data.get("metrics", [])), ("chart", data.get("charts", []))):
-        if len(entries) > 30:
+        if len(entries) > (100 if kind == "metric" else 30):
             raise ValueError("Too many dashboard measurements")
         for entry in entries:
             if not isinstance(entry, dict):

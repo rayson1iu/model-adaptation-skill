@@ -62,6 +62,22 @@ python3 "$skill_dir/scripts/dashboard.py" report --state "$state_file" \
 
 ## 实测指标与图表
 
+模型数据页通过完整指标表展示全部已登记指标及未测的预设项，列出实测值、单位、参考值、门槛、判定、测量条件和来源。表格与卡片使用同一份数据，额外的项目指标也会列入；窄屏可横向滚动查看所有列。空值显示“—”，数值零按实际值显示。
+
+卡片用于概览，完整表格按下列类别展开，每行附有口径说明。预设位置不代表所有模型都必须测量该项；任务成功率、困惑度、token 指标等只在模型和任务适用时登记。P2 没有本次实测时保留空值。
+
+| 类别 | 预设指标 ID |
+| --- | --- |
+| 推理时延 | `latency_mean`、`latency_p50`、`latency_p90`、`latency_p95`、`latency_p99`、`latency_min`、`latency_max`、`latency_std`、`cold_start_latency`、`model_compute_latency`、`preprocess_latency`、`transfer_latency`、`postprocess_latency` |
+| 吞吐 | `throughput`、`time_to_first_token`、`time_per_output_token` |
+| 资源占用 | `peak_memory`（allocated）、`reserved_memory`、`device_memory`、`host_rss`、`gpu_utilization` |
+| 数值对齐 | `max_error`、`mean_abs_error`、`rmse`、`max_rel_error`、`mean_rel_error`、`cosine_similarity`、`alignment_pass_rate`、`nonfinite_count` |
+| 任务效果 | `accuracy`、`task_success_rate`、`perplexity` |
+| 测量覆盖 | `sample_count`、`inference_iterations`、`inference_failure_count` |
+| P0 训练验证 | `training_loss`、`gradient_norm`、`parameter_update_norm`、`optimizer_updates`、`training_step_latency`、`training_throughput`、`training_peak_memory`、`gradient_nonfinite_count` |
+
+用指标 `id` 对应预设行；也接受 `max_abs_error`、`peak_memory_mb`、`task_accuracy` 这些已有同义 ID。优先按 ID 识别具体指标，未匹配 ID 时可用同名 `slot` 关联行；只有 `slot=accuracy` 等宽泛信息时，不将其推断为最大误差等不同指标。其他指标列在“项目扩展”中。最多登记 100 项指标及 30 个图表；同一指标的多配置结果使用独立 ID，写明配置条件，不覆盖另一配置的数据。
+
 有真实测量结果时，在模型的 `repo/` 或 `model_zoo/` 目录内准备小型 JSON 摘要，然后用 `measurements` 命令将其路径登记到看板索引。看板每次刷新都重新读取该文件。页面预设推理延迟、显存占用、模型精度/误差和吞吐量卡片，P0 增加训练损失；未测项显示“—”，不增加验收要求。指标可用 `slot` 指定 `latency`、`memory`、`accuracy`、`throughput` 或 `training_loss`，多种口径时只将明确匹配的一项显示在预设卡片，其余另行显示。JSON 中每个指标和图都必须指向这些目录内已存在的原始数据或报告文件（`.json`、`.csv`、`.tsv`、`.md`），不要写入无来源的估计值。图表支持折线图 `line`（最多 600 点）和柱状图 `bar`（最多 40 点）；长序列可从原始数据生成有说明的抽样摘要，原始文件仍保留。
 
 按本次任务选少量有判断价值的数据：P1 常见的是目标 GPU 推理结果、逐样本精度误差与参考 GPU 对比；P0 可再展示训练曲线、端到端时延/吞吐、显存和剖析热点。P2 仅调研，不展示仿佛本次实测的指标；引用上游公开指标应放在技术报告并标出来源与原条件。

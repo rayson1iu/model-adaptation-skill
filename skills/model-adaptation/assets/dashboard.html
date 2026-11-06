@@ -196,6 +196,20 @@
     .sidebar .model-option { width: 100%; }
     .sidebar .model-option strong { font-size: 13px; }
     .measure-card.pending .value { color: #8799aa; }
+    .data-table { padding: 18px 0 0; margin-bottom: 18px; overflow: hidden; }
+    .data-table .section-head { padding: 0 18px; }
+    .data-table-scroll { overflow-x: auto; }
+    .data-table-scroll:focus-visible { outline: 2px solid #3978d4; outline-offset: -2px; }
+    .data-table table { border-collapse: collapse; width: 100%; min-width: 960px; font-size: 13px; }
+    .data-table th, .data-table td { padding: 11px 14px; text-align: left; vertical-align: top; border-top: 1px solid #e7ecf2; line-height: 1.55; }
+    .data-table thead th { background: #f5f8fc; color: #566f88; white-space: nowrap; font-size: 12px; }
+    .data-table tbody th { min-width: 145px; font-weight: 650; }
+    .data-table tbody tr:hover { background: #f8fbff; }
+    .data-table .numeric { font-variant-numeric: tabular-nums; font-weight: 650; white-space: nowrap; }
+    .data-table .condition { min-width: 180px; max-width: 280px; }
+    .data-table .source-cell { min-width: 130px; max-width: 220px; overflow-wrap: anywhere; }
+    .data-table .category { color: #60758c; white-space: nowrap; font-size: 12px; }
+    .metric-definition { display: block; margin-top: 3px; color: #74869a; font-size: 11px; font-weight: 400; }
     .stages { grid-template-columns: repeat(auto-fit, minmax(min(100%, 390px), 1fr)); align-items: start; gap: 10px; }
     .stage { padding: 14px 16px; }
     .stage-head { grid-template-columns: 26px minmax(0, 1fr) auto; gap: 9px; }
@@ -226,7 +240,7 @@
     <div id="page-workflow" role="tabpanel" aria-labelledby="tab-workflow" tabindex="0">
     <section id="workflow"><div class="section-head"><h2>工作阶段</h2><small>流程状态与验收判定分别显示</small></div><div class="stages" id="stages"></div></section>
     </div>
-    <div id="page-data" role="tabpanel" aria-labelledby="tab-data" tabindex="0" hidden><section class="measurements" id="measurements-section"><div class="section-head"><h2>模型实测数据</h2><small>未测数据以 — 显示</small></div><div id="measurement-error"></div><div class="metric-grid" id="metric-grid"></div><div class="chart-grid" id="chart-grid"></div></section></div>
+    <div id="page-data" role="tabpanel" aria-labelledby="tab-data" tabindex="0" hidden><section class="measurements" id="measurements-section"><div class="section-head"><h2>模型实测数据</h2><small>未测数据以 — 显示</small></div><div id="measurement-error"></div><div class="metric-grid" id="metric-grid"></div><section class="panel data-table" aria-labelledby="metric-table-title"><div class="section-head"><h2 id="metric-table-title">完整指标表</h2><small id="metric-table-count"></small></div><p class="muted" style="padding:0 18px">按模型与任务范围测量；空行仅提供指标位置。</p><div class="data-table-scroll" role="region" aria-label="模型指标明细，可横向滚动" tabindex="0"><table><thead><tr><th scope="col">类别</th><th scope="col">指标与口径</th><th scope="col">实测值</th><th scope="col">单位</th><th scope="col">参考值</th><th scope="col">验收门槛</th><th scope="col">判定</th><th scope="col">测量条件</th><th scope="col">来源</th></tr></thead><tbody id="metric-table-body"></tbody></table></div></section><div class="chart-grid" id="chart-grid"></div></section></div>
     <div id="page-documents" role="tabpanel" aria-labelledby="tab-documents" tabindex="0" hidden><div class="metrics" aria-label="产物统计"><div class="panel metric"><b id="issue-count">0</b><span>ISSUE</span></div><div class="panel metric"><b id="report-count">0</b><span>报告</span></div><div class="panel metric"><b id="open-count">0</b><span>待处理 ISSUE</span></div></div>
     <div class="grid" id="artifacts"><section class="panel"><div class="section-head"><h2>ISSUE</h2><small>产生后即可查看</small></div><div id="issues"></div></section><section class="panel"><div class="section-head"><h2>报告</h2><small>草稿与最终版</small></div><div id="reports"></div></section></div>
     </div>
@@ -304,13 +318,78 @@
         if (metric) { used.add(metric); return metric; }
         return {placeholder:true, label:slot.label};
       });
-      $("metric-grid").innerHTML = [...presetCards, ...metrics.filter(metric => !used.has(metric))].map(metric => {
+      $("metric-grid").innerHTML = presetCards.map(metric => {
         if (metric.placeholder) return `<article class="panel measure-card pending"><span class="label">${esc(metric.label)}</span><span class="value">—</span><div class="detail">暂无数据</div></article>`;
         const status = metric.status || "diagnostic";
         const statusText = {pass:"通过",fail:"未达门槛",diagnostic:"诊断数据"}[status] || status;
         const details = [metric.context, metric.reference && `参考：${metric.reference}`, metric.threshold && `门槛：${metric.threshold}`].filter(Boolean).map(esc).join(" · ");
         const source = metric.source_url?.startsWith("/evidence/") ? `<a href="${esc(metric.source_url)}" target="_blank" rel="noopener">查看数据</a>` : "";
         return `<article class="panel measure-card"><span class="label">${esc(metric.label)}</span><span class="value">${esc(number(metric.value))}<small>${esc(metric.unit)}</small></span><div class="detail">${details}</div><div class="foot">${pill(statusText,status)}${source}</div></article>`;
+      }).join("");
+      const catalog = [
+        ["推理时延", "latency_mean", "端到端时延 · 均值", "正式稳态运行的完整输入到输出耗时"],
+        ["推理时延", "latency_p50", "端到端时延 · P50", "50% 的有效样本耗时不超过此值"],
+        ["推理时延", "latency_p90", "端到端时延 · P90", "90% 的有效样本耗时不超过此值"],
+        ["推理时延", "latency_p95", "端到端时延 · P95", "95% 的有效样本耗时不超过此值"],
+        ["推理时延", "latency_p99", "端到端时延 · P99", "99% 的有效样本耗时不超过此值"],
+        ["推理时延", "latency_min", "端到端时延 · 最小值", "正式有效运行中的最短耗时"],
+        ["推理时延", "latency_max", "端到端时延 · 最大值", "正式有效运行中的最长耗时"],
+        ["推理时延", "latency_std", "端到端时延 · 标准差", "同一配置下有效耗时的波动"],
+        ["推理时延", "cold_start_latency", "冷启动耗时", "注明是否包含加载、编译及首次推理"],
+        ["推理时延", "model_compute_latency", "模型计算耗时", "仅模型计算路径，边界须注明"],
+        ["推理时延", "preprocess_latency", "预处理耗时", "注明输入读取、解码与变换范围"],
+        ["推理时延", "transfer_latency", "设备传输耗时", "注明传输方向、数据量与同步方式"],
+        ["推理时延", "postprocess_latency", "后处理耗时", "从模型输出到最终可用结果"],
+        ["吞吐", "throughput", "有效吞吐量", "按实际完成工作量与同一时间窗口计算"],
+        ["吞吐", "time_to_first_token", "首 token 时延", "适用于生成模型，注明请求起点"],
+        ["吞吐", "time_per_output_token", "输出 token 间隔", "适用于生成模型，注明平均值或分位数"],
+        ["资源占用", "peak_memory", "GPU allocated 峰值", "框架实际分配给张量的显存峰值"],
+        ["资源占用", "reserved_memory", "GPU reserved 峰值", "框架缓存分配器保留的显存峰值"],
+        ["资源占用", "device_memory", "设备工具显存峰值", "设备工具采集，注明卡号与采样方式"],
+        ["资源占用", "host_rss", "主机 RSS 峰值", "指定进程的常驻内存峰值"],
+        ["资源占用", "gpu_utilization", "GPU 利用率", "注明工具、采样区间与统计口径"],
+        ["数值对齐", "max_error", "最大绝对误差", "约定比较对象与统计轴上的最大绝对差"],
+        ["数值对齐", "mean_abs_error", "平均绝对误差", "注明有效样本、mask 与聚合方法"],
+        ["数值对齐", "rmse", "均方根误差", "约定比较对象的 RMSE"],
+        ["数值对齐", "max_rel_error", "最大相对误差", "零或近零分母处理按冻结规则执行"],
+        ["数值对齐", "mean_rel_error", "平均相对误差", "注明分母规则、mask 与聚合方法"],
+        ["数值对齐", "cosine_similarity", "余弦相似度", "注明统计轴及零向量处理规则"],
+        ["数值对齐", "alignment_pass_rate", "样本对齐通过率", "满足冻结精度门槛的样本比例"],
+        ["数值对齐", "nonfinite_count", "非有限输出数", "NaN/Inf 的统计对象与计数范围须注明"],
+        ["任务效果", "accuracy", "任务精度", "按项目定义的 Accuracy 或其他主指标"],
+        ["任务效果", "task_success_rate", "任务成功率", "实际完成任务的成功次数占比"],
+        ["任务效果", "perplexity", "困惑度", "适用时记录数据集、分词及计算口径"],
+        ["测量覆盖", "sample_count", "有效样本数", "本次统计实际纳入的样本数量"],
+        ["测量覆盖", "inference_iterations", "正式有效运行次数", "排除预热与失败运行"],
+        ["测量覆盖", "inference_failure_count", "运行失败次数", "注明测量范围及失败类型"],
+        ...(state.level === "P0" ? [
+          ["训练验证", "training_loss", "训练 loss", "注明对应更新步与损失定义"],
+          ["训练验证", "gradient_norm", "梯度范数", "注明参数范围及范数类型"],
+          ["训练验证", "parameter_update_norm", "参数更新范数", "检查优化器更新前后的参数变化"],
+          ["训练验证", "optimizer_updates", "实际优化器更新数", "区分 micro-step 与梯度累积后的更新"],
+          ["训练验证", "training_step_latency", "训练更新步耗时", "注明前向、反向、通信与更新边界"],
+          ["训练验证", "training_throughput", "训练吞吐量", "实际处理的有效样本数 / 同一时间窗口"],
+          ["训练验证", "training_peak_memory", "训练显存峰值", "注明 allocated、reserved 或设备采样口径"],
+          ["训练验证", "gradient_nonfinite_count", "非有限梯度数", "检查 NaN/Inf，注明参与检查的参数范围"]
+        ] : [])
+      ].map(([category,id,label,definition]) => ({category,id,label,definition}));
+      const aliases = {peak_memory:["peak_memory_mb"], max_error:["max_abs_error"], accuracy:["task_accuracy"]};
+      const exactIds = new Set(catalog.flatMap(item => [item.id, ...(aliases[item.id] || [])]));
+      const tableUsed = new Set();
+      const tableRows = catalog.map(item => {
+        const metric = metrics.find(metric => !tableUsed.has(metric) && (metric.id === item.id || aliases[item.id]?.includes(metric.id)))
+          || metrics.find(metric => !tableUsed.has(metric) && !exactIds.has(metric.id) && metric.slot === item.id);
+        if (metric) { tableUsed.add(metric); return {...item, ...metric}; }
+        return {...item, placeholder:true};
+      });
+      tableRows.push(...metrics.filter(metric => !tableUsed.has(metric)).map(metric => ({...metric, category:"项目扩展"})));
+      $("metric-table-count").textContent = `已登记 ${metrics.length} 项 · 未测 ${tableRows.filter(metric => metric.placeholder).length} 项`;
+      $("metric-table-body").innerHTML = tableRows.map(metric => {
+        const field = value => value === undefined || value === null || value === "" ? "—" : esc(value);
+        const status = metric.status || "diagnostic";
+        const verdict = metric.placeholder ? "暂无数据" : pill({pass:"通过", fail:"未达门槛", diagnostic:"诊断数据"}[status] || status, status);
+        const source = metric.source_url?.startsWith("/evidence/") ? `<a href="${esc(metric.source_url)}" target="_blank" rel="noopener">${esc(metric.source || "查看数据")}</a>` : field(metric.source);
+        return `<tr><td class="category">${esc(metric.category)}</td><th scope="row">${esc(metric.label)}${metric.definition ? `<small class="metric-definition">${esc(metric.definition)}</small>` : ""}</th><td class="numeric">${metric.placeholder ? "—" : esc(number(metric.value))}</td><td>${field(metric.unit)}</td><td>${field(metric.reference)}</td><td>${field(metric.threshold)}</td><td>${verdict}</td><td class="condition">${field(metric.context)}</td><td class="source-cell">${source}</td></tr>`;
       }).join("");
       $("chart-grid").innerHTML = charts.map(chart => `<article class="panel chart-card"><h3>${esc(chart.title)}</h3>${chartSvg(chart)}${chart.caption ? `<p>${esc(chart.caption)}</p>` : ""}${chart.source_url?.startsWith("/evidence/") ? `<div class="source"><a href="${esc(chart.source_url)}" target="_blank" rel="noopener">查看图表数据</a></div>` : ""}</article>`).join("");
     }
