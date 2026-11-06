@@ -13,7 +13,7 @@
 
 这是指导 AI 助手执行工作的文档型 skill，安装本 skill 无需额外 Python 包。运行实际模型时，仍需按目标项目准备硬件、框架、权重、数据及访问权限。
 
-报告面向需要理解结果和作出决定的人：先写结论与关键指标，必要时用真实数据绘制误差、训练或性能图表；详细命令、环境和原始日志放在附录或证据链接中。失败和关键限制仍需如实说明，避免在正文反复堆砌一般性免责声明。P0/P1 使用[运行报告模板](skills/model-adaptation/assets/run-report.md)，P2 使用[技术调研报告模板](skills/model-adaptation/assets/research-report.md)；[报告示例](skills/model-adaptation/references/report-examples.md)展示建议收录、暂缓收录和 P1 未通过的写法。
+报告面向需要理解结果和作出决定的人：先写结论与关键指标，默认使用文字和表格，只有用户明确要求画图或图表可视化时才绘制图表；详细命令、环境和原始日志放在附录或证据链接中。失败和关键限制仍需如实说明，避免在正文反复堆砌一般性免责声明。P0/P1 使用[运行报告模板](skills/model-adaptation/assets/run-report.md)，P2 使用[技术调研报告模板](skills/model-adaptation/assets/research-report.md)；[报告示例](skills/model-adaptation/references/report-examples.md)展示建议收录、暂缓收录和 P1 未通过的写法。
 
 ## 安装
 
