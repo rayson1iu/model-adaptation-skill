@@ -8,7 +8,6 @@
 <workspace>/
   AGENTS.md                 项目公共规范（已有则不擅自重写）
   README.md                 工作区总览
-  dashboard/                用户启用看板时保存看板自身状态与索引
   model_zoo/<model>/        上游源码，保留 Git 历史
   repo/MODELS.md            模型登记
   repo/<model>/

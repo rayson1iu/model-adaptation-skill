@@ -88,8 +88,6 @@ $model-adaptation level=P2
 
 `level` 是本 skill 解释的输入约定，不是终端命令或 Codex 原生 CLI 参数。也可写“级别：P1”，小写 `p1` 按 P1 处理。不支持的值或互相冲突的级别会在执行受影响的工作前要求澄清。
 
-希望工作过程中查看网页进展时，在请求中加 `dashboard=on` 或写“开启本地看板”。workshop 看板自身状态和索引放在 `/workshop/dashboard/`，测量摘要、文档和原始数据保存在 `/workshop/model_zoo/` 或 `/workshop/repo/`；可同时登记多个模型及多次运行，在左侧选择要查看的模型；顶部标签分别查看所选运行的工作阶段、模型数据和相关文档。Agent 会逐项更新本机只读页面，展开每个阶段的工作项、流程状态和验收判定；有实测结果时显示附来源的指标和图表，Markdown ISSUE 与报告可在页面内阅读，PDF 提供打开或下载入口。页面自动刷新；看板没有显示 Agent 内部思考或自动探测真实进程的能力。详见[本地工作看板](skills/model-adaptation/references/dashboard.md)。
-
 有条件时一并提供目标 GPU、参考 GPU 或已有基线、权重与真实输入、验收门槛及产物位置；P0 还需可用于短程训练验证的数据和训练入口。Skill 会先读取项目已有资料，不要求重复填写；[开工前的最小依据](skills/model-adaptation/references/levels.md#开工前的最小依据)说明缺项时可以先推进哪些工作。
 
 P0 默认做短程训练链路验证，检查真实样本的前向、反向和实际参数更新，不默认要求完整训练或收敛；项目另有明确要求时按其范围执行。P1 根据证据与条件决定是否需要微调，不用微调掩盖精度对齐失败。P2 不安装依赖、下载权重或运行模型，仅交付注明来源和证据缺口的技术报告。详见 [分级执行与交付](skills/model-adaptation/references/levels.md)。
@@ -130,14 +128,11 @@ skills/model-adaptation/
 │   ├── levels.md                 P0/P1/P2 分级执行与交付
 │   ├── validation.md             数值、性能及按需训练验证
 │   ├── issues-and-handoff.md     问题记录与成果交接
-│   ├── report-examples.md        虚构示例，展示报告结论写法
-│   └── dashboard.md              可选本地工作看板
-├── scripts/dashboard.py          看板状态与本机只读服务
+│   └── report-examples.md        虚构示例，展示报告结论写法
 └── assets/
     ├── experiment-profile.md     实验配置模板
     ├── run-report.md             运行报告模板
     ├── research-report.md        P2 技术调研报告模板
-    ├── dashboard.html            看板页面
     ├── issue.md                  问题记录模板
     └── work-log.md               工作日志模板
 ```
