@@ -13,8 +13,6 @@
 
 这是指导 AI 助手执行工作的文档型 skill，安装本 skill 无需额外 Python 包。运行实际模型时，仍需按目标项目准备硬件、框架、权重、数据及访问权限。
 
-报告面向需要理解结果和作出决定的人：先写结论与关键指标，默认使用文字和表格，只有用户明确要求画图或图表可视化时才绘制图表；详细命令、环境和原始日志放在附录或证据链接中。失败和关键限制仍需如实说明，避免在正文反复堆砌一般性免责声明。P0/P1 可参考[运行报告模板](skills/model-adaptation/assets/run-report.md)，P2 可参考[技术调研报告模板](skills/model-adaptation/assets/research-report.md)；[报告示例](skills/model-adaptation/references/report-examples.md)展示建议收录、暂缓收录和 P1 未通过的写法。
-
 ## 安装
 
 ### 方式一：在 Codex 中安装
@@ -92,7 +90,7 @@ $model-adaptation level=P2
 
 P0 默认做短程训练链路验证，检查真实样本的前向、反向和实际参数更新，不默认要求完整训练或收敛；项目另有明确要求时按其范围执行。P1 根据证据与条件决定是否需要微调，不用微调掩盖精度对齐失败。P2 不安装依赖、下载权重或运行模型，仅交付注明来源和证据缺口的技术报告。详见 [分级执行与交付](skills/model-adaptation/references/levels.md)。
 
-未指定 `level` 时按请求中的范围工作。已有基线、脚本和文档可以复用，报告说明实际覆盖的目标及证据缺口。
+未指定 `level` 时按请求中的范围工作。已有基线、脚本和文档可以复用。
 
 ### 自然语言指定范围
 
@@ -127,12 +125,9 @@ skills/model-adaptation/
 │   ├── environment.md            环境、目录与跨平台对照
 │   ├── levels.md                 P0/P1/P2 分级执行与交付
 │   ├── validation.md             数值、性能及按需训练验证
-│   ├── issues-and-handoff.md     问题记录与成果交接
-│   └── report-examples.md        虚构示例，展示报告结论写法
+│   └── issues-and-handoff.md     问题记录与成果交接
 └── assets/
     ├── experiment-profile.md     实验配置模板
-    ├── run-report.md             运行报告模板
-    ├── research-report.md        P2 技术调研报告模板
     ├── issue.md                  问题记录模板
     └── work-log.md               工作日志模板
 ```

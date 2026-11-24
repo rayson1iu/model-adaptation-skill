@@ -31,10 +31,7 @@ description: 为 GPU 模型适配提供分级方向和验证方法，适用于 P
 | 如何组织环境、目录或远端对照 | [环境与目录](references/environment.md) |
 | 如何比较数值、测量性能或验证训练 | [验证与测量](references/validation.md) |
 | 如何记录问题、复验或交接 | [问题记录与交接](references/issues-and-handoff.md) |
-| 如何写出简明的结论 | [报告正文示例](references/report-examples.md) |
 
-## 写给读者的交付物
+## 可用资源
 
-先写结论、关键结果和下一步，再附证据链接。文字和表格是默认形式，只有用户明确要求时才画图。单纯的网络下载失败按需记录在工作日志或交接说明中，不建 ISSUE。
-
-[实验配置](assets/experiment-profile.md)、[运行报告](assets/run-report.md)、[技术调研报告](assets/research-report.md)、[ISSUE](assets/issue.md)和[工作日志](assets/work-log.md)可按需取用。已有同类文档时沿用项目格式，保留支撑结论的内容即可。
+[实验配置](assets/experiment-profile.md)、[ISSUE](assets/issue.md)和[工作日志](assets/work-log.md)可按需取用，也可沿用项目已有格式。
